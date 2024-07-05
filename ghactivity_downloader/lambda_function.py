@@ -7,3 +7,4 @@ def lambda_handler(event, context):
         'statusCode': download_res.status_code,
         'body': json.dumps('downloaded the file')
     }
+print(lambda_handler(None, None))
