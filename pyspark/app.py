@@ -1,9 +1,12 @@
-from pyspark.sql import SparkSession
+from util import get_spark_session
+import os
 
-spark = SparkSession. \
-            builder. \
-            master('local'). \
-            appName('Github'). \
-            getOrCreate()
+def main():
+    env = os.environ.get('ENVIRON')
 
-spark.sql('SELECT current_date').show()
+    spark = get_spark_session(env, 'Github')
+
+    spark.sql('SELECT current_date').show()
+
+if __name__ == '__main__':
+    main()
