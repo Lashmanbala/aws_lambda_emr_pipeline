@@ -17,7 +17,6 @@ if bkt_res['ResponseMetadata']['HTTPStatusCode'] == 200:
 
 role_name = 'lambda-s3-full-access-role'
 trusted_service = 'lambda.amazonaws.com'  # The service that will assume the role
-policy_arn_list = ['arn:aws:iam::aws:policy/AmazonS3FullAccess',' arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole']
-
+policy_arn_list = ['arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole','arn:aws:iam::aws:policy/AmazonS3FullAccess']
 role_arn = create_iam_role(role_name, trusted_service, policy_arn_list)
 print(f'IAM role created with ARN: {role_arn}')
