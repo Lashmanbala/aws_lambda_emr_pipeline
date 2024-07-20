@@ -1,4 +1,5 @@
 import boto3
+import json
 
 def create_bucket(bkt_name):
     s3_client = boto3.client('s3')
@@ -14,3 +15,47 @@ def upload_s3(bucket,folder,file_name,body):
             Body=body
             )
     return res
+
+
+def create_iam_role(role_name, trusted_service, policy_arn_list):
+    # Initialize the IAM client
+    iam_client = boto3.client('iam')
+
+    # Trust policy that allows the specified service to assume this role
+    trust_policy = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": trusted_service
+                },
+                "Action": "sts:AssumeRole"
+            }
+        ]
+    }
+
+    try:
+        # Create the role
+        create_role_response = iam_client.create_role(
+                                            RoleName=role_name,
+                                            AssumeRolePolicyDocument=json.dumps(trust_policy),
+                                            Description="AWS Lambda role"
+                                        )
+        
+        role_arn = create_role_response['Role']['Arn']
+        print(f'Role "{role_name}" created successfully with ARN: {role_arn}')
+
+        # Attach the specified policies to the role
+        for policy_arn in policy_arn_list:
+            iam_client.attach_role_policy(
+                            RoleName=role_name,
+                            PolicyArn=policy_arn
+                        )
+            print(f'Policy {policy_arn} attached to role "{role_name}".')
+
+        return role_arn
+
+    except Exception as e:
+        print(f'Error: {e}')
+
