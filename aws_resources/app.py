@@ -1,10 +1,10 @@
-from util import create_bucket, upload_s3, create_iam_role, create_lambda_function
+from util import create_bucket, upload_s3, create_iam_role, create_lambda_function, invoke_lambda_funtion
 
 bkt_name='github-bkt'
-# bkt_res = create_bucket(bkt_name)
+bkt_res = create_bucket(bkt_name)
 
-# if bkt_res['ResponseMetadata']['HTTPStatusCode'] == 200:
-#         print('Bucket created successfully')
+if bkt_res['ResponseMetadata']['HTTPStatusCode'] == 200:
+        print('Bucket created successfully')
 
 file_path = '/home/bala/code/projects/github_activity_project/ghactivity_downloader/ghactivity_downloader_for_lambda.zip'
 folder='zipfiles'
@@ -29,7 +29,11 @@ env_variables_dict = {'BUCKET_NAME' : bkt_name,
                     'BOOKMARK_FILE' : 'bookmark',
                     'BASELINE_FILE' : '2024-07-21-0.json.gz'
                     }
-
-lambda_res = create_lambda_function(bucket, folder, file_name, role_arn, env_variables_dict)
+func_name='ghactivity-download-function'
+lambda_res = create_lambda_function(bucket, folder, file_name, role_arn, env_variables_dict,func_name)
 print('successfully created lambda function')
 print(lambda_res)
+
+invoke_res = invoke_lambda_funtion(func_name)
+print('successfully invoked lambda function')
+print(invoke_res)

@@ -59,7 +59,7 @@ def create_iam_role(role_name, trusted_service, policy_arn_list):
     except Exception as e:
         print(f'Error: {e}')
 
-def create_lambda_function(bucket, folder, file_name, role_arn, env_variables_dict):
+def create_lambda_function(bucket, folder, file_name, role_arn, env_variables_dict,func_name):
     lambda_client = boto3.client('lambda')
     try:
         lambda_res = lambda_client.create_function(
@@ -72,7 +72,7 @@ def create_lambda_function(bucket, folder, file_name, role_arn, env_variables_di
                                         'Variables': env_variables_dict
                                                 },
                                     
-                                    FunctionName='ghactivity-download-function',
+                                    FunctionName=func_name,
                                     Handler='lambda_function.lambda_handler',
                                     MemorySize=256,
                                     Role=role_arn,
@@ -80,5 +80,16 @@ def create_lambda_function(bucket, folder, file_name, role_arn, env_variables_di
                                     Timeout=60
                                 )
         return lambda_res
+    except Exception as e:
+        print(e)
+
+def invoke_lambda_funtion(func_name):
+    lambda_client = boto3.client('lambda')
+    try:
+        response = lambda_client.invoke(
+        FunctionName=func_name,
+        InvocationType='RequestResponse'
+        )
+        return response
     except Exception as e:
         print(e)
