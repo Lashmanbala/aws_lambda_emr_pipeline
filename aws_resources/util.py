@@ -76,7 +76,7 @@ def create_lambda_function(bucket, folder, file_name, role_arn, env_variables_di
                                     Handler='lambda_function.lambda_handler',
                                     MemorySize=256,
                                     Role=role_arn,
-                                    Runtime='python3.10',      
+                                    Runtime='python3.10',      # as per the development environment
                                     Timeout=60
                                 )
         return lambda_res
