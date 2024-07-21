@@ -59,3 +59,26 @@ def create_iam_role(role_name, trusted_service, policy_arn_list):
     except Exception as e:
         print(f'Error: {e}')
 
+def create_lambda_function(bucket, folder, file_name, role_arn, env_variables_dict):
+    lambda_client = boto3.client('lambda')
+    try:
+        lambda_res = lambda_client.create_function(
+                                    Code={
+                                        'S3Bucket': bucket,
+                                        'S3Key': f'{folder}/{file_name}'
+                                        },
+                                    Description='Downloading ghactivity',
+                                    Environment={
+                                        'Variables': env_variables_dict
+                                                },
+                                    
+                                    FunctionName='ghactivity-download-function',
+                                    Handler='lambda_function.lambda_handler',
+                                    MemorySize=256,
+                                    Role=role_arn,
+                                    Runtime='python3.10',      
+                                    Timeout=60
+                                )
+        return lambda_res
+    except Exception as e:
+        print(e)
