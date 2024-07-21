@@ -93,3 +93,17 @@ def invoke_lambda_funtion(func_name):
         return response
     except Exception as e:
         print(e)
+
+def create_event_bridge_rule():
+    event_bridge_client = boto3.client('events')
+    try:
+        event_rule_response = event_bridge_client.put_rule(
+                Name='HourlyGhactivityDownloadRule',
+                ScheduleExpression='rate(60 minutes)',
+                State='ENABLED',
+                Description='Trigger ghactivity-download-function hourly'
+                )
+        return event_rule_response
+    except Exception as e:
+        print(e)
+

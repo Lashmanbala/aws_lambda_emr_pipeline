@@ -1,4 +1,5 @@
-from util import create_bucket, upload_s3, create_iam_role, create_lambda_function, invoke_lambda_funtion
+from util import create_bucket, upload_s3, create_iam_role, create_lambda_function, invoke_lambda_funtion, \
+    create_event_bridge_rule, add_target_to_rule
 
 bkt_name='github-bkt'
 bkt_res = create_bucket(bkt_name)
@@ -37,3 +38,7 @@ print(lambda_res)
 invoke_res = invoke_lambda_funtion(func_name)
 print('successfully invoked lambda function')
 print(invoke_res)
+
+event_rule_response = create_event_bridge_rule()
+print(event_rule_response)
+
