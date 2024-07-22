@@ -1,3 +1,6 @@
+import boto3
+import json
+
 def create_event_bridge_rule(rule_name):
     event_bridge_client = boto3.client('events')
     try:
