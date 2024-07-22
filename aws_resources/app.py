@@ -1,6 +1,6 @@
 from util import create_bucket, upload_s3, create_iam_role, create_lambda_function, invoke_lambda_funtion
 from event_bridge_util import create_event_bridge_rule, add_target_to_rule
-from emr_util import create_emr_ec2_role
+from emr_util import create_emr_ec2_role, create_emr_service_role
 
 bkt_name='github-bkt'
 bkt_res = create_bucket(bkt_name)
@@ -56,3 +56,7 @@ print(put_targets_response)
 # Create the EMR_EC2_DefaultRole
 emr_ec2_role_arn = create_emr_ec2_role()
 print(f'IAM role created with ARN: {emr_ec2_role_arn}')
+
+# Create the EMR_DefaultRole
+emr_service_role_arn = create_emr_service_role()
+print(f'IAM role created with ARN: {emr_service_role_arn}')
