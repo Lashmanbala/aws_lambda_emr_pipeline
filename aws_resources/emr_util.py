@@ -1,7 +1,7 @@
 import boto3
 import json
 
-def create_emr_ec2_role():
+def create_emr_ec2_instance_profile():
     iam_client = boto3.client('iam')
 
     # Define the trust relationship policy
@@ -44,8 +44,19 @@ def create_emr_ec2_role():
         print(f'Policy {arn} attached to role "EMR_EC2_Role".')
 
 
-    return role_arn
+    # Create instance profile
+    try:
+        iam_client.create_instance_profile(InstanceProfileName='EMR_EC2_InstanceProfile')
+        print('Instance profile "EMR_EC2_InstanceProfile" created successfully.')
+    except iam_client.exceptions.EntityAlreadyExistsException:
+        print('Instance profile "EMR_EC2_InstanceProfile" already exists.')
 
+    # Add role to instance profile
+    iam_client.add_role_to_instance_profile(
+        InstanceProfileName='EMR_EC2_InstanceProfile',
+        RoleName='EMR_EC2_Role'
+    )
+    print('Role "EMR_EC2_Role" added to instance profile "EMR_EC2_InstanceProfile".')
 
 def create_emr_service_role():
     iam_client = boto3.client('iam')
@@ -86,7 +97,3 @@ def create_emr_service_role():
     print(f'Policy {emr_policy_arn} attached to role "EMR_Service_Role".')
 
     return role_arn
-
-# Create the EMR_DefaultRole
-role_arn = create_emr_service_role()
-print(f'IAM role created with ARN: {role_arn}')
