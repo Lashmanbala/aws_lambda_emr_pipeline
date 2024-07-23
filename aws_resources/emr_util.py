@@ -97,3 +97,46 @@ def create_emr_service_role():
     print(f'Policy {emr_policy_arn} attached to role "EMR_Service_Role".')
 
     return role_arn
+
+def create_emr_cluster(bucket_name, instance_type, core_instance_count):
+        
+    emr_client = boto3.client('emr')
+
+    # Define the cluster
+    cluster_config = {
+        'Name': 'ghactivity_cluster',
+        'LogUri': f's3://{bucket_name}/logs/emr_logs/',
+        'ReleaseLabel': 'emr-7.0.0',  # Replace with your desired EMR release version
+        'Instances': {
+            'InstanceGroups': [
+                {
+                    'Name': 'Master node',
+                    'Market': 'ON_DEMAND',
+                    'InstanceRole': 'MASTER',
+                    'InstanceType': instance_type,
+                    'InstanceCount': 1
+                },
+                {
+                    'Name': 'Core nodes',
+                    'Market': 'ON_DEMAND',
+                    'InstanceRole': 'CORE',
+                    'InstanceType': instance_type,
+                    'InstanceCount': core_instance_count
+                }
+            ],
+            'KeepJobFlowAliveWhenNoSteps': False,
+            'TerminationProtected': False
+        },
+        'Applications': [
+            {'Name': 'Hadoop'},
+            {'Name': 'Spark'}
+        ],
+        'JobFlowRole': 'EMR_EC2_InstanceProfile',  # Ensure this role exists or create it 
+        'ServiceRole': 'EMR_Service_Role'  # Ensure this role exists or create it 
+    }
+
+    # Create the cluster with the step
+    emr_response = emr_client.run_job_flow(**cluster_config)
+
+    # Print the cluster ID
+    return emr_response['JobFlowId']

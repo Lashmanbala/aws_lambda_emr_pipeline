@@ -60,3 +60,20 @@ print(emr_ec2_instance_profile)
 emr_service_role_arn = create_emr_service_role()
 print(f'IAM role created with ARN: {emr_service_role_arn}')
 
+bucket_name= 'github-bkt'
+folder='zipfiles'
+dependencies_file_name='github_spark_app.zip'
+file_name='app.py'
+instance_type='m4.xlarge'
+core_instance_count=1
+env_vars_dict= {
+        'ENVIRON':'PROD',
+        'SRC_DIR':'s3://github-bkt/landing/',
+        'SRC_FILE_FORMAT':'json',
+        'TGT_DIR':'s3://github-bkt/raw/',
+        'TGT_FILE_FORMAT':'parquet',
+        'SRC_FILE_PATTERN':'2024-07-21',
+        }
+
+emr_response = create_emr_cluster(bucket_name, instance_type, core_instance_count)
+print(f'cluster id is {emr_response}')
