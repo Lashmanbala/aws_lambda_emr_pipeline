@@ -66,6 +66,12 @@ dependencies_file_name='github_spark_app.zip'
 file_name='app.py'
 instance_type='m4.xlarge'
 core_instance_count=1
+
+
+emr_cluster_id = create_emr_cluster(bucket_name, instance_type, core_instance_count)
+print(f'cluster id is {emr_cluster_id}')
+
+emr_cluster_id = 'j-25VCA95IAK45Q'
 env_vars_dict= {
         'ENVIRON':'PROD',
         'SRC_DIR':'s3://github-bkt/landing/',
@@ -73,9 +79,7 @@ env_vars_dict= {
         'TGT_DIR':'s3://github-bkt/raw/',
         'TGT_FILE_FORMAT':'parquet',
         'SRC_FILE_PATTERN':'2024-07-21',
-        }
-
-emr_cluster_id = create_emr_cluster(bucket_name, instance_type, core_instance_count)
-print(f'cluster id is {emr_cluster_id}')
-
-spark_step = add_spark_step(emr_cluster_id)
+}
+zip_file_path = 's3://github-bkt/zipfiles/github_spark_app.zip'
+app_file_path = 's3://github-bkt/zipfiles/app.py'
+spark_step = add_spark_step(emr_cluster_id,env_vars_dict, zip_file_path, app_file_path)
