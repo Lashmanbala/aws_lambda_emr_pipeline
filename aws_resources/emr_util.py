@@ -140,3 +140,64 @@ def create_emr_cluster(bucket_name, instance_type, core_instance_count):
 
     # Print the cluster ID
     return emr_response['JobFlowId']
+
+def add_spark_step(cluster_id, s3_script_path, script_args):
+    emr_client = boto3.client('emr')
+
+    step_config = {
+        'Name': 'Spark submit step',
+        'ActionOnFailure': 'CONTINUE',
+        'HadoopJarStep': {
+            'Jar': 'command-runner.jar',
+            'Args': [
+                'spark-submit',
+                '--deploy-mode', 'cluster',
+                s3_script_path
+            ] + script_args
+        }
+    }
+
+    step_response = emr_client.add_job_flow_steps(
+        JobFlowId=cluster_id,
+        Steps=[step_config]
+    )
+
+    print(step_response)
+    return step_response['StepIds'][0]
+
+
+def add_spark_step(cluster_id):
+    emr_client = boto3.client('emr')
+
+    # Define the Spark submit step
+    step_config = {
+        'Name': 'Spark submit step',
+        'ActionOnFailure': 'CONTINUE',
+        'HadoopJarStep': {
+            'Jar': 'command-runner.jar',
+            'Args': [
+                'spark-submit',
+                '--deploy-mode', 'cluster',
+                '--conf', 'spark.yarn.appMasterEnv.ENVIRON=PROD',
+                '--conf', 'spark.yarn.appMasterEnv.SRC_DIR=s3://github-bkt/landing/',
+                '--conf', 'spark.yarn.appMasterEnv.SRC_FILE_FORMAT=json',
+                '--conf', 'spark.yarn.appMasterEnv.TGT_DIR=s3://github-bkt/raw/',
+                '--conf', 'spark.yarn.appMasterEnv.TGT_FILE_FORMAT=parquet',
+                '--conf', 'spark.yarn.appMasterEnv.SRC_FILE_PATTERN=2024-07-21',
+                '--py-files', 's3://github-bkt/zipfiles/github_spark_app.zip',
+                's3://github-bkt/zipfiles/app.py'
+            ]
+        }
+    }
+
+    # Add the step to the cluster
+    step_response = emr_client.add_job_flow_steps(
+        JobFlowId=cluster_id,
+        Steps=[step_config]
+    )
+
+    # Print the response for debugging purposes (optional)
+    print(step_response)
+
+    # Return the step ID
+    return step_response['StepIds'][0]

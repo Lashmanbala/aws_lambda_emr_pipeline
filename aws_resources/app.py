@@ -1,6 +1,6 @@
 from util import create_bucket, upload_s3, create_iam_role, create_lambda_function, invoke_lambda_funtion
 from event_bridge_util import create_event_bridge_rule, add_target_to_rule
-from emr_util import create_emr_ec2_instance_profile, create_emr_service_role, create_emr_cluster
+from emr_util import create_emr_ec2_instance_profile, create_emr_service_role, create_emr_cluster, add_spark_step
 
 bkt_name='github-bkt'
 bkt_res = create_bucket(bkt_name)
@@ -75,5 +75,7 @@ env_vars_dict= {
         'SRC_FILE_PATTERN':'2024-07-21',
         }
 
-emr_response = create_emr_cluster(bucket_name, instance_type, core_instance_count)
-print(f'cluster id is {emr_response}')
+emr_cluster_id = create_emr_cluster(bucket_name, instance_type, core_instance_count)
+print(f'cluster id is {emr_cluster_id}')
+
+spark_step = add_spark_step(emr_cluster_id)
