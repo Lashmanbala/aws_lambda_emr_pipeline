@@ -54,12 +54,19 @@ def create_emr_ec2_instance_profile():
     except iam_client.exceptions.EntityAlreadyExistsException:
         print('Instance profile "EMR_EC2_InstanceProfile" already exists.')
 
-    # Add role to instance profile
-    response = iam_client.add_role_to_instance_profile(
-                                                    InstanceProfileName='EMR_EC2_InstanceProfile',
-                                                    RoleName='EMR_EC2_Role'
-                                                    )
-    print('Role "EMR_EC2_Role" added to instance profile "EMR_EC2_InstanceProfile".')
+    # Check if the role is already attached to the instance profile
+    response = iam_client.get_instance_profile(InstanceProfileName='EMR_EC2_InstanceProfile')
+    attached_roles = [role['RoleName'] for role in response['InstanceProfile']['Roles']]
+
+    if 'EMR_EC2_Role' not in attached_roles:
+        iam_client.add_role_to_instance_profile(
+            InstanceProfileName='EMR_EC2_InstanceProfile',
+            RoleName='EMR_EC2_Role'
+        )
+        print('Role "EMR_EC2_Role" added to instance profile "EMR_EC2_InstanceProfile".')
+    else:
+        print('Role "EMR_EC2_Role" is already attached to instance profile "EMR_EC2_InstanceProfile".')
+
     return response["InstanceProfile"]["InstanceProfileName"]
     
 
