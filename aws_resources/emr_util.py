@@ -152,7 +152,7 @@ def create_emr_cluster(bucket_name, instance_type, core_instance_count):
 
     # Create the cluster with the step
     emr_response = emr_client.run_job_flow(**cluster_config)
-    return emr_response['JobFlowId']
+    return emr_response
 
 
 def add_spark_step(cluster_id, env_vars_dict, zip_file_path, app_file_path):
