@@ -10,25 +10,25 @@ def create_bucket(bkt_name):
 def upload_s3(bucket,folder,file_name,body):
     s3_client = boto3.client('s3')
     res = s3_client.put_object(
-            Bucket=bucket,
-            Key=f'{folder}/{file_name}',
-            Body=body
-            )
+                            Bucket=bucket,
+                            Key=f'{folder}/{file_name}',
+                            Body=body
+                            )
     return res
 
 
-def create_iam_role(role_name, trusted_service, policy_arn_list):
+def create_iam_role(role_name, policy_arn_list):
     # Initialize the IAM client
     iam_client = boto3.client('iam')
 
     # Trust policy that allows the specified service to assume this role
-    trust_policy = {
+    policy_document = {
         "Version": "2012-10-17",
         "Statement": [
             {
                 "Effect": "Allow",
                 "Principal": {
-                    "Service": trusted_service
+                    "Service": 'lambda.amazonaws.com' 
                 },
                 "Action": "sts:AssumeRole"
             }
@@ -39,27 +39,30 @@ def create_iam_role(role_name, trusted_service, policy_arn_list):
         # Create the role
         create_role_response = iam_client.create_role(
                                             RoleName=role_name,
-                                            AssumeRolePolicyDocument=json.dumps(trust_policy),
-                                            Description="AWS Lambda role"
+                                            AssumeRolePolicyDocument=json.dumps(policy_document)
                                         )
         
         role_arn = create_role_response['Role']['Arn']
         print(f'Role "{role_name}" created successfully with ARN: {role_arn}')
 
+    except iam_client.exceptions.EntityAlreadyExistsException:
+        print(f'Role "{role_name}" already exists.')
+        role_arn = iam_client.get_role(RoleName='EMR_Service_Role')['Role']['Arn']
+
         # Attach the specified policies to the role
         for policy_arn in policy_arn_list:
             iam_client.attach_role_policy(
-                            RoleName=role_name,
-                            PolicyArn=policy_arn
-                        )
+                                        RoleName=role_name,
+                                        PolicyArn=policy_arn
+                                    )
             print(f'Policy {policy_arn} attached to role "{role_name}".')
 
-        return role_arn
+        return create_role_response
 
     except Exception as e:
         print(f'Error: {e}')
 
-def create_lambda_function(bucket, folder, file_name, role_arn, env_variables_dict,func_name):
+def create_lambda_function(bucket, folder, file_name, role_arn, env_variables_dict,func_name, handler):
     lambda_client = boto3.client('lambda')
     try:
         lambda_res = lambda_client.create_function(
@@ -73,7 +76,7 @@ def create_lambda_function(bucket, folder, file_name, role_arn, env_variables_di
                                                 },
                                     
                                     FunctionName=func_name,
-                                    Handler='lambda_function.lambda_handler',
+                                    Handler=handler,
                                     MemorySize=256,
                                     Role=role_arn,
                                     Runtime='python3.10',      # as per the development environment
@@ -87,9 +90,9 @@ def invoke_lambda_funtion(func_name):
     lambda_client = boto3.client('lambda')
     try:
         response = lambda_client.invoke(
-        FunctionName=func_name,
-        InvocationType='RequestResponse'
-        )
+                                        FunctionName=func_name,
+                                        InvocationType='RequestResponse'
+                                        )
         return response
     except Exception as e:
         print(e)
