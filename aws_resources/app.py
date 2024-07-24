@@ -69,4 +69,19 @@ create_role_response = create_iam_role(role_name, policy_arn_list)
 lambda_s3_iam_emr_role_arn = create_role_response['Role']['Arn']
 print(f'IAM role created with ARN: {lambda_s3_iam_emr_role_arn}')
 
+file_name = 'lambda_for_emr.zip'
+env_variables_dict = {
+    'BUCKET_NAME': 'github-bkt',
+    'INSTANCE_TYPE': 'm4.xlarge',
+    'CORE_INSTANCE_COUNT': '1',
+    'SPARK_ENV_DICT': "{'ENVIRON':'PROD', 'SRC_DIR':'s3://github-bkt/landing/', 'SRC_FILE_FORMAT':'json', 'TGT_DIR':'s3://github-bkt/raw/', 'TGT_FILE_FORMAT':'parquet', 'SRC_FILE_PATTERN':'2024-07-21'}",
+    'ZIP_FILE_PATH': 's3://github-bkt/zipfiles/github_spark_app.zip',
+    'APP_FILE_PATH': 's3://github-bkt/zipfiles/app.py'
+}
+
+func_name = 'lambda_function_for_emr'
+handler = 'lambda_function_for_emr.lambda_handler'
+
+create_lambda_response = create_lambda_function(bucket,folder,file_name,lambda_s3_iam_emr_role_arn,env_variables_dict,func_name,handler)
+print(f"Successfully created {create_lambda_response['FunctionName']}")
 
