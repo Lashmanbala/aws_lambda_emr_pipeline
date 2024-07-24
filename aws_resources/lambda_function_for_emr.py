@@ -15,7 +15,7 @@ def lambda_handler(event, context):
     core_instance_count= int(os.environ.get('CORE_INSTANCE_COUNT'))
 
     emr_response = create_emr_cluster(bucket_name, instance_type, core_instance_count)
-    emr_cluster_id = {emr_response['JobFlowId']}
+    emr_cluster_id = emr_response['JobFlowId']
     print(f'cluster is created with the id {emr_cluster_id}')
 
     env_vars_dict= os.environ.get('SPARK_ENV_DICT')
