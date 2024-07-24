@@ -23,4 +23,4 @@ def lambda_handler(event, context):
     app_file_path = os.environ.get('APP_FILE_PATH')
 
     step_response = add_spark_step(emr_cluster_id,env_vars_dict, zip_file_path, app_file_path)
-    print(f'Successfully step is added to cluster. step id is {step_response['StepIds'][0]}')
+    print(f"Successfully step is added to cluster. step id is {step_response['StepIds'][0]}")
