@@ -12,7 +12,7 @@ def lambda_handler(event, context):
 
     bucket_name= os.environ.get('BUCKET_NAME')
     instance_type=os.environ.get('INSTANCE_TYPE')
-    core_instance_count=os.environ.get('CORE_INSTANCE_COUNT')
+    core_instance_count= int(os.environ.get('CORE_INSTANCE_COUNT'))
 
     emr_response = create_emr_cluster(bucket_name, instance_type, core_instance_count)
     emr_cluster_id = {emr_response['JobFlowId']}
