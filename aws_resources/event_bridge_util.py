@@ -1,14 +1,13 @@
 import boto3
 import json
 
-def create_event_bridge_rule(rule_name):
+def create_event_bridge_rule(rule_name, rate):
     event_bridge_client = boto3.client('events')
     try:
         event_rule_response = event_bridge_client.put_rule(
                 Name=rule_name,
-                ScheduleExpression='rate(60 minutes)',
-                State='ENABLED',
-                Description='Trigger ghactivity-download-function hourly'
+                ScheduleExpression=rate,
+                State='ENABLED'
                 )
         return event_rule_response
     except Exception as e:
