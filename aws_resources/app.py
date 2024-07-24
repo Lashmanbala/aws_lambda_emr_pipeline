@@ -85,3 +85,6 @@ handler = 'lambda_function_for_emr.lambda_handler'
 create_lambda_response = create_lambda_function(bucket,folder,file_name,lambda_s3_iam_emr_role_arn,env_variables_dict,func_name,handler)
 print(f"Successfully created {create_lambda_response['FunctionName']}")
 
+res = invoke_lambda_funtion('lambda_function_for_emr')
+print(f"Successfully created {create_lambda_response['FunctionName']}")
+print(res)
