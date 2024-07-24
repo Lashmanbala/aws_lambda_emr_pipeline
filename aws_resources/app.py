@@ -73,7 +73,7 @@ file_name = 'lambda_for_emr.zip'
 env_variables_dict = {
     'BUCKET_NAME': 'github-bkt',
     'INSTANCE_TYPE': 'm4.xlarge',
-    'CORE_INSTANCE_COUNT': 1,
+    'CORE_INSTANCE_COUNT': '1',
     'SPARK_ENV_DICT': "{'ENVIRON':'PROD', 'SRC_DIR':'s3://github-bkt/landing/', 'SRC_FILE_FORMAT':'json', 'TGT_DIR':'s3://github-bkt/raw/', 'TGT_FILE_FORMAT':'parquet', 'SRC_FILE_PATTERN':'2024-07-21'}",
     'ZIP_FILE_PATH': 's3://github-bkt/zipfiles/github_spark_app.zip',
     'APP_FILE_PATH': 's3://github-bkt/zipfiles/app.py'
