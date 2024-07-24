@@ -47,7 +47,7 @@ def create_iam_role(role_name, policy_arn_list):
 
     except iam_client.exceptions.EntityAlreadyExistsException:
         print(f'Role "{role_name}" already exists.')
-        role_arn = iam_client.get_role(RoleName='EMR_Service_Role')['Role']['Arn']
+        create_role_response = iam_client.get_role(RoleName=role_name)
 
         # Attach the specified policies to the role
         for policy_arn in policy_arn_list:
@@ -70,7 +70,6 @@ def create_lambda_function(bucket, folder, file_name, role_arn, env_variables_di
                                         'S3Bucket': bucket,
                                         'S3Key': f'{folder}/{file_name}'
                                         },
-                                    Description='Downloading ghactivity',
                                     Environment={
                                         'Variables': env_variables_dict
                                                 },
