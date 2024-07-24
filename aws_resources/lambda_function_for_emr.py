@@ -18,7 +18,7 @@ def lambda_handler(event, context):
     emr_cluster_id = emr_response['JobFlowId']
     print(f'cluster is created with the id {emr_cluster_id}')
 
-    env_vars_dict= os.environ.get('SPARK_ENV_DICT')
+    env_vars_dict= json.loads(os.environ.get('SPARK_ENV_DICT'))
     zip_file_path = os.environ.get('ZIP_FILE_PATH')
     app_file_path = os.environ.get('APP_FILE_PATH')
 
