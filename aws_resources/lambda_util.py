@@ -48,6 +48,7 @@ def create_iam_role(role_name, policy_arn_list):
 
 def create_lambda_function(bucket, folder, file_name, role_arn, env_variables_dict,func_name, handler):
     lambda_client = boto3.client('lambda')
+    
     try:
         lambda_res = lambda_client.create_function(
                                     Code={
@@ -65,7 +66,9 @@ def create_lambda_function(bucket, folder, file_name, role_arn, env_variables_di
                                     Runtime='python3.10',      # as per the development environment
                                     Timeout=60
                                 )
-        return lambda_res
+        print(f"successfully created {lambda_res['FunctionName']}")
+        arn = lambda_res['FunctionArn']
+        return arn
     except Exception as e:
         print(e)
 
