@@ -29,7 +29,7 @@ def s3():
         if upload_res['ResponseMetadata']['HTTPStatusCode'] == 200:
                 print(f'{file_name} uploded successfully')
 
-def downloder_lambda():
+def create_downloder_lambda():
     role_name = 'lambda-s3-full-access-role'
     bucket='github-bkt'
     folder='zipfiles1'
@@ -64,43 +64,47 @@ def shedule_downloder_lambda(lambda_arn):
     print(f"Successfully event rule created for ghactivity_downloader function with arn: {event_rule_response['RuleArn']}")
 
     rule_arn = event_rule_response['RuleArn']
-
-    put_targets_response = add_target_to_rule(rule_name, lambda_arn, rule_arn)
+    
+    add_target_to_rule(rule_name, lambda_arn, rule_arn)
     print("Successfully lambda target added to event rule")
 
 #if __name__ == '__main__':
-    #lambda_arn = downloder_lambda()
+    #lambda_arn = create_downloder_lambda()
     #shedule_downloder_lambda(lambda_arn)
 
-# role_name = 'lambda-s3-emr-iam-access-role'
-# lambda_basic_execution_arn = 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-# s3_full_access_arn = 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
-# iam_full_access_arn = 'arn:aws:iam::aws:policy/IAMFullAccess'
-# emr_full_access_arn = 'arn:aws:iam::aws:policy/AmazonElasticMapReduceFullAccess'
-# policy_arn_list = [lambda_basic_execution_arn, s3_full_access_arn, iam_full_access_arn, emr_full_access_arn]
+def create_emr_lambda():
+    role_name = 'lambda-s3-emr-iam-access-role'
+    lambda_basic_execution_arn = 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+    s3_full_access_arn = 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+    iam_full_access_arn = 'arn:aws:iam::aws:policy/IAMFullAccess'
+    emr_full_access_arn = 'arn:aws:iam::aws:policy/AmazonElasticMapReduceFullAccess'
+    policy_arn_list = [lambda_basic_execution_arn, s3_full_access_arn, iam_full_access_arn, emr_full_access_arn]
 
-# create_role_response = create_iam_role(role_name, policy_arn_list)
-# lambda_s3_iam_emr_role_arn = create_role_response['Role']['Arn']
-# print(f'IAM role created with ARN: {lambda_s3_iam_emr_role_arn}')
+    create_role_response = create_iam_role(role_name, policy_arn_list)
 
-# file_name = 'lambda_for_emr.zip'
-# env_variables_dict = {
-#     'BUCKET_NAME': 'github-bkt',
-#     'INSTANCE_TYPE': 'm4.xlarge',
-#     'CORE_INSTANCE_COUNT': '1',
-#     'SPARK_ENV_DICT': '{"ENVIRON":"PROD", "SRC_DIR":"s3://github-bkt/landing/", "SRC_FILE_FORMAT":"json", "TGT_DIR":"s3://github-bkt/raw/", "TGT_FILE_FORMAT":"parquet", "SRC_FILE_PATTERN":"2024-07-21"}',
-#     'ZIP_FILE_PATH': 's3://github-bkt/zipfiles/github_spark_app.zip',
-#     'APP_FILE_PATH': 's3://github-bkt/zipfiles/app.py'
-# }
+    lambda_s3_iam_emr_role_arn = create_role_response['Role']['Arn']
+    print(f'IAM role created with ARN: {lambda_s3_iam_emr_role_arn}')
 
-# func_name = 'lambda_function_for_emr'
-# handler = 'lambda_function_for_emr.lambda_handler'
+    bucket = 'github-bkt'
+    folder = 'zipfiles'
+    emr_lambda_zipfile = '/home/bala/code/projects/github_activity_project/aws_resources/lambda_for_emr.zip'
+    file_name = emr_lambda_zipfile.split('/')[-1]
+    env_variables_dict = {
+        'BUCKET_NAME': 'github-bkt',
+        'INSTANCE_TYPE': 'm4.xlarge',
+        'CORE_INSTANCE_COUNT': '1',
+        'SPARK_ENV_DICT': '{"ENVIRON":"PROD", "SRC_DIR":"s3://github-bkt/landing/", "SRC_FILE_FORMAT":"json", "TGT_DIR":"s3://github-bkt/raw/", "TGT_FILE_FORMAT":"parquet", "SRC_FILE_PATTERN":"2024-07-21"}',
+        'ZIP_FILE_PATH': 's3://github-bkt/zipfiles/github_spark_app.zip',
+        'APP_FILE_PATH': 's3://github-bkt/zipfiles/app.py'
+    }
 
-# create_lambda_response = create_lambda_function(bucket,folder,file_name,lambda_s3_iam_emr_role_arn,env_variables_dict,func_name,handler)
-# print(f"Successfully created {create_lambda_response['FunctionName']}")
+    func_name = 'lambda_function_for_emr1'
+    handler = 'lambda_function_for_emr.lambda_handler'
 
-# res = invoke_lambda_funtion('lambda_function_for_emr')
-# print(f"Successfully invoked {create_lambda_response['FunctionName']}")
+    lambda_arn = create_lambda_function(bucket,folder,file_name,lambda_s3_iam_emr_role_arn,env_variables_dict,func_name,handler)
+    return lambda_arn
+
+create_emr_lambda()
 
 # rate = 'cron(0 0 * * ? *)' # every day at 12:00am
 # rule_name = 'DailyEmrRule'
