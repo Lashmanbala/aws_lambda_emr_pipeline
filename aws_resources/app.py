@@ -14,6 +14,7 @@ def s3():
     spark_app_zipfile = '/home/bala/code/projects/github_activity_project/pyspark/github_spark_app.zip'
     spark_app_file = '/home/bala/code/projects/github_activity_project/pyspark/app.py'
     file_path_list = [ghactivity_lambda_zipfile, emr_lambda_zipfile, spark_app_zipfile, spark_app_file]
+
     folder='zipfiles1'
 
     for file_path in file_path_list:
@@ -28,31 +29,32 @@ def s3():
         if upload_res['ResponseMetadata']['HTTPStatusCode'] == 200:
                 print(f'{file_name} uploded successfully')
 
-# role_name = 'lambda-s3-full-access-role'
-# lambda_basic_execution_arn = 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-# s3_full_access_arn = 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
-# policy_arn_list = [lambda_basic_execution_arn,s3_full_access_arn]
+def downloder_lambda():
+    role_name = 'lambda-s3-full-access-role'
+    bucket='github-bkt'
+    folder='zipfiles1'
+    ghactivity_lambda_zipfile = '/home/bala/code/projects/github_activity_project/ghactivity_downloader/ghactivity_downloader_for_lambda.zip'
+    file_name = ghactivity_lambda_zipfile.split('/')[-1]
 
-# create_role_response = create_iam_role(role_name, policy_arn_list)
-# lambda_s3_role_arn = create_role_response['Role']['Arn']
-# print(f'IAM role created with ARN: {lambda_s3_role_arn}')
+    lambda_basic_execution_arn = 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+    s3_full_access_arn = 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+    policy_arn_list = [lambda_basic_execution_arn, s3_full_access_arn]
 
-# role_arn = 'arn:aws:iam::891376967063:role/lambda-s3-full-access-role'
-# env_variables_dict = {'BUCKET_NAME' : bucket,
-#                     'FILE_PREFIX' : 'landing',
-#                     'BOOKMARK_FILE' : 'bookmark',
-#                     'BASELINE_FILE' : '2024-07-21-0.json.gz'
-#                     }
-# func_name='ghactivity-download-function'
-# handler = 'lambda_function.lambda_handler'
+    create_role_response = create_iam_role(role_name, policy_arn_list)
+    lambda_s3_role_arn = create_role_response['Role']['Arn']
+    print(f'IAM role created with ARN: {lambda_s3_role_arn}')
 
-# lambda_res = create_lambda_function(bucket, folder, file_name, lambda_s3_role_arn, env_variables_dict,func_name,handler)
-# print('successfully created lambda function')
-# print(lambda_res)
+    env_variables_dict = {'BUCKET_NAME' : bucket,
+                        'FILE_PREFIX' : 'landing',
+                        'BOOKMARK_FILE' : 'bookmark',
+                        'BASELINE_FILE' : '2024-07-21-0.json.gz'
+                        }
+    func_name='ghactivity-download-function7'
+    handler = 'lambda_function.lambda_handler'
 
-# invoke_res = invoke_lambda_funtion(func_name)
-# print('successfully invoked lambda function')
-# print(invoke_res)
+    lambda_arn = create_lambda_function(bucket, folder, file_name, lambda_s3_role_arn, env_variables_dict,func_name,handler)
+    print(lambda_arn)
+downloder_lambda()
 
 # rate = 'rate(60 minutes)'
 # rule_name = 'HourlyGhactivityDownloadRule'
