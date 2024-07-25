@@ -49,25 +49,28 @@ def downloder_lambda():
                         'BOOKMARK_FILE' : 'bookmark',
                         'BASELINE_FILE' : '2024-07-21-0.json.gz'
                         }
-    func_name='ghactivity-download-function7'
+    func_name='ghactivity-download-function'
     handler = 'lambda_function.lambda_handler'
 
     lambda_arn = create_lambda_function(bucket, folder, file_name, lambda_s3_role_arn, env_variables_dict,func_name,handler)
-    print(lambda_arn)
-downloder_lambda()
+    return lambda_arn
 
-# rate = 'rate(60 minutes)'
-# rule_name = 'HourlyGhactivityDownloadRule'
-# event_rule_response = create_event_bridge_rule(rule_name, rate)
-# print('Successfully event rule created for ghactivity_downloader function')
-# print(event_rule_response)
 
-# lambda_arn = lambda_res['FunctionArn']
-# rule_arn = event_rule_response['RuleArn']
-# put_targets_response = add_target_to_rule(rule_name, lambda_arn, rule_arn)
-# print('Successfully lambda target added to event rule')
-# print(put_targets_response)
+def shedule_downloder_lambda(lambda_arn):
+    rate = 'rate(60 minutes)'
+    rule_name = 'HourlyGhactivityDownloadRule'
 
+    event_rule_response = create_event_bridge_rule(rule_name, rate)
+    print(f"Successfully event rule created for ghactivity_downloader function with arn: {event_rule_response['RuleArn']}")
+
+    rule_arn = event_rule_response['RuleArn']
+
+    put_targets_response = add_target_to_rule(rule_name, lambda_arn, rule_arn)
+    print("Successfully lambda target added to event rule")
+
+#if __name__ == '__main__':
+    #lambda_arn = downloder_lambda()
+    #shedule_downloder_lambda(lambda_arn)
 
 # role_name = 'lambda-s3-emr-iam-access-role'
 # lambda_basic_execution_arn = 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
