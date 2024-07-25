@@ -68,9 +68,6 @@ def shedule_downloder_lambda(lambda_arn):
     add_target_to_rule(rule_name, lambda_arn, rule_arn)
     print("Successfully lambda target added to event rule")
 
-#if __name__ == '__main__':
-    #lambda_arn = create_downloder_lambda()
-    #shedule_downloder_lambda(lambda_arn)
 
 def create_emr_lambda():
     role_name = 'lambda-s3-emr-iam-access-role'
@@ -98,23 +95,27 @@ def create_emr_lambda():
         'APP_FILE_PATH': 's3://github-bkt/zipfiles/app.py'
     }
 
-    func_name = 'lambda_function_for_emr1'
+    func_name = 'lambda_function_for_emr'
     handler = 'lambda_function_for_emr.lambda_handler'
 
     lambda_arn = create_lambda_function(bucket,folder,file_name,lambda_s3_iam_emr_role_arn,env_variables_dict,func_name,handler)
     return lambda_arn
 
-create_emr_lambda()
+def schedule_emr_lambda(lambda_arn):
+    rate = 'cron(0 0 * * ? *)' # every day at 12:00am
+    rule_name = 'DailyEmrRule'
+    
+    event_rule_response = create_event_bridge_rule(rule_name, rate)
+    print('Successfully event rule created for lambda_for_emr function')
 
-# rate = 'cron(0 0 * * ? *)' # every day at 12:00am
-# rule_name = 'DailyEmrRule'
-# event_rule_response = create_event_bridge_rule(rule_name, rate)
-# print('Successfully event rule created for lambda_for_emr function')
-# print(event_rule_response)
+    rule_arn = event_rule_response['RuleArn']
+    
+    add_target_to_rule(rule_name, lambda_arn, rule_arn)
+    print('Successfully lambda target added to event rule')
 
-# # lambda_arn = create_lambda_response['FunctionArn']
-# lambda_arn = 'arn:aws:lambda:us-east-1:891376967063:function:lambda_function_for_emr'
-# rule_arn = event_rule_response['RuleArn']
-# put_targets_response = add_target_to_rule(rule_name, lambda_arn, rule_arn)
-# print('Successfully lambda target added to event rule')
-# print(put_targets_response)
+# if __name__ == '__main__':
+#     downloader_lambda_arn = create_emr_lambda()
+#     schedule_emr_lambda(downloader_lambda_arn)
+
+#     emr_lambda_arn = create_emr_lambda()
+#     schedule_emr_lambda(emr_lambda_arn)
