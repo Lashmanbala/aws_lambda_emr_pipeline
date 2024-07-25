@@ -114,8 +114,7 @@ def create_emr_lambda():
 def schedule_emr_lambda(lambda_arn):
     print('Scheduling emr lambda')
 
-    #rate = 'cron(0 0 * * ? *)' # every day at 12:00am
-    rate = 'rate(60 minutes)'
+    rate = 'cron(0 0 * * ? *)'
     rule_name = 'DailyEmrRule'
     
     event_rule_response = create_event_bridge_rule(rule_name, rate)
