@@ -2,19 +2,20 @@ from s3_util import create_bucket, upload_s3
 from lambda_util import create_iam_role, create_lambda_function, invoke_lambda_funtion
 from event_bridge_util import create_event_bridge_rule, add_target_to_rule
 
-bkt_name='github-bkt'
-bkt_res = create_bucket(bkt_name)
+bucket='github-bkt'
+bucket_res = create_bucket(bucket)
 
-if bkt_res['ResponseMetadata']['HTTPStatusCode'] == 200:
-        print('Bucket created successfully')
+if bucket_res['ResponseMetadata']['HTTPStatusCode'] == 200:
+        print(f'{bucket} created successfully')
 
 file_path = '/home/bala/code/projects/github_activity_project/ghactivity_downloader/ghactivity_downloader_for_lambda.zip'
 folder='zipfiles'
 file_name=file_path.split('/')[-1]
 body=open(file_path, 'rb').read()
 
-upload_res = upload_s3(bkt_name,folder,file_name,body)
-print('zipfile uploded successfully')
+upload_res = upload_s3(bucket,folder,file_name,body)
+if upload_res['ResponseMetadata']['HTTPStatusCode'] == 200:
+        print(f'{file_name} uploded successfully')
 
 role_name = 'lambda-s3-full-access-role'
 lambda_basic_execution_arn = 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
@@ -25,9 +26,8 @@ create_role_response = create_iam_role(role_name, policy_arn_list)
 lambda_s3_role_arn = create_role_response['Role']['Arn']
 print(f'IAM role created with ARN: {lambda_s3_role_arn}')
 
-bucket = bkt_name
 role_arn = 'arn:aws:iam::891376967063:role/lambda-s3-full-access-role'
-env_variables_dict = {'BUCKET_NAME' : bkt_name,
+env_variables_dict = {'BUCKET_NAME' : bucket,
                     'FILE_PREFIX' : 'landing',
                     'BOOKMARK_FILE' : 'bookmark',
                     'BASELINE_FILE' : '2024-07-21-0.json.gz'
