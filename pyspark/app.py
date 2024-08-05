@@ -3,7 +3,7 @@ from util import get_spark_session
 from read import from_files
 from process import transform
 from write import to_files
-from bookmark import get_prev_day, get_next_day, upload_bookmark
+from bookmark import get_pattern, upload_bookmark
 from datetime import datetime
 
 def main():
@@ -21,14 +21,13 @@ def main():
     spark = get_spark_session(env, 'Github')
 
     while True:
-        prev_day = get_prev_day(bucket_name,file_prefix,bookmark_file,baseline_file)
-        nxt_day = get_next_day(prev_day)
+        pattern = get_pattern(bucket_name,file_prefix,bookmark_file,baseline_file)
 
-        if datetime.strptime(nxt_day, '%Y-%m-%d').date() == datetime.today().date():
-            print('its today')
+        if datetime.strptime(pattern, '%Y-%m-%d').date() == datetime.today().date():
+            print('its today. Let all the files get downloaded')
             break
 
-        src_file_pattern = f'{nxt_day}-*'
+        src_file_pattern = f'{pattern}-*'
 
         df = from_files(spark,src_file_format,src_dir,src_file_pattern)
 
@@ -36,7 +35,7 @@ def main():
         
         to_files(df_transformed,tgt_dir,tgt_file_format)
 
-        upload_bookmark(bucket_name,file_prefix,bookmark_file,nxt_day)
+        upload_bookmark(bucket_name,file_prefix,bookmark_file,pattern)
 
 if __name__ == '__main__':
     main()
