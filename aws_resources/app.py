@@ -127,7 +127,7 @@ def schedule_emr_lambda(lambda_arn):
     add_target_to_rule(rule_name, lambda_arn, rule_arn)
     print('Successfully lambda target added to event rule')
 
-if __name__ == '__main__':
+def deploy():
     create_and_upload_s3()
 
     downloader_lambda_arn = create_downloder_lambda()
@@ -135,3 +135,6 @@ if __name__ == '__main__':
 
     emr_lambda_arn = create_emr_lambda()
     schedule_emr_lambda(emr_lambda_arn)
+
+if __name__ == '__main__':
+    deploy()
