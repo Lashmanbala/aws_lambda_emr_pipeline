@@ -4,7 +4,7 @@ from event_bridge_util import create_event_bridge_rule, add_target_to_rule
 
 def create_and_upload_s3():
     print('Creating bucket')
-    bucket='github-bkt1'
+    bucket='github-bkt3'
     bucket_res = create_bucket(bucket)
 
     if bucket_res['ResponseMetadata']['HTTPStatusCode'] == 200:
@@ -14,7 +14,8 @@ def create_and_upload_s3():
     emr_lambda_zipfile = '/home/bala/code/projects/github_activity_project/aws_resources/lambda_for_emr.zip'
     spark_app_zipfile = '/home/bala/code/projects/github_activity_project/pyspark/github_spark_app.zip'
     spark_app_file = '/home/bala/code/projects/github_activity_project/pyspark/app.py'
-    file_path_list = [ghactivity_lambda_zipfile, emr_lambda_zipfile, spark_app_zipfile, spark_app_file]
+    bootstrap_file = '/home/bala/code/projects/github_activity_project/aws_resources/install_boto3.sh'
+    file_path_list = [ghactivity_lambda_zipfile, emr_lambda_zipfile, spark_app_zipfile, spark_app_file, bootstrap_file]
 
     folder='zipfiles'
 
@@ -35,11 +36,6 @@ def create_downloder_lambda():
     print('Creating iam role for downloder_lambda')
 
     role_name = 'lambda-s3-full-access-role'
-    bucket='github-bkt1'
-    folder='zipfiles'
-    ghactivity_lambda_zipfile = '/home/bala/code/projects/github_activity_project/ghactivity_downloader/ghactivity_downloader_for_lambda.zip'
-    file_name = ghactivity_lambda_zipfile.split('/')[-1]
-
     lambda_basic_execution_arn = 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
     s3_full_access_arn = 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
     policy_arn_list = [lambda_basic_execution_arn, s3_full_access_arn]
@@ -48,10 +44,15 @@ def create_downloder_lambda():
     lambda_s3_role_arn = create_role_response['Role']['Arn']
     print(f'IAM role created with ARN: {lambda_s3_role_arn}')
 
+    bucket='github-bkt3'
+    folder='zipfiles'
+    ghactivity_lambda_zipfile = '/home/bala/code/projects/github_activity_project/ghactivity_downloader/ghactivity_downloader_for_lambda.zip'
+    file_name = ghactivity_lambda_zipfile.split('/')[-1]
+
     env_variables_dict = {'BUCKET_NAME' : bucket,
                         'FILE_PREFIX' : 'landing',
                         'BOOKMARK_FILE' : 'bookmark',
-                        'BASELINE_FILE' : '2024-07-21-0.json.gz'
+                        'BASELINE_FILE' : '2024-08-01-20.json.gz'
                         }
     func_name='ghactivity-download-function'
     handler = 'lambda_function.lambda_handler'
@@ -91,17 +92,18 @@ def create_emr_lambda():
     lambda_s3_iam_emr_role_arn = create_role_response['Role']['Arn']
     print(f'IAM role created with ARN: {lambda_s3_iam_emr_role_arn}')
 
-    bucket = 'github-bkt1'
+    bucket = 'github-bkt3'
     folder = 'zipfiles'
     emr_lambda_zipfile = '/home/bala/code/projects/github_activity_project/aws_resources/lambda_for_emr.zip'
     file_name = emr_lambda_zipfile.split('/')[-1]
     env_variables_dict = {
-        'BUCKET_NAME': 'github-bkt1',
+        'BUCKET_NAME': 'github-bkt3',
         'INSTANCE_TYPE': 'm4.xlarge',
         'CORE_INSTANCE_COUNT': '1',
-        'SPARK_ENV_DICT': '{"ENVIRON":"PROD", "SRC_DIR":"s3://github-bkt1/landing/", "SRC_FILE_FORMAT":"json", "TGT_DIR":"s3://github-bkt1/raw/", "TGT_FILE_FORMAT":"parquet", "SRC_FILE_PATTERN":"2024-07-21"}',
-        'ZIP_FILE_PATH': 's3://github-bkt1/zipfiles/github_spark_app.zip',
-        'APP_FILE_PATH': 's3://github-bkt1/zipfiles/app.py'
+        'BOOTSTRAP_FILE_PATH': 's3://github-bkt3/zipfiles/install_boto3.sh',
+        'SPARK_ENV_DICT': '{"ENVIRON":"PROD", "SRC_DIR":"s3://github-bkt3/landing/", "SRC_FILE_FORMAT":"json", "TGT_DIR":"s3://github-bkt3/raw/", "TGT_FILE_FORMAT":"parquet","BUCKET_NAME":"github-bkt3","FILE_PREFIX":"raw","BOOKMARK_FILE":"bookmark","BASELINE_FILE":"2024-08-01-20.json.gz"}',
+        'ZIP_FILE_PATH': 's3://github-bkt3/zipfiles/github_spark_app.zip',
+        'APP_FILE_PATH': 's3://github-bkt3/zipfiles/app.py'
     }
 
     func_name = 'lambda_function_for_emr'

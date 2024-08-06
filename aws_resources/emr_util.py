@@ -110,10 +110,18 @@ def create_emr_service_role():
     print(f'Policy {emr_policy_arn} attached to role "{role_name}".')
     return role_name
 
-def create_emr_cluster(bucket_name, instance_type, core_instance_count):
+def create_emr_cluster(bucket_name, instance_type, core_instance_count, bootstrap_file_path):
         
     emr_client = boto3.client('emr')
 
+    bootstrap_actions = [
+        {
+            'Name': 'Install boto3',
+            'ScriptBootstrapAction': {
+                'Path': bootstrap_file_path
+            }
+        }
+    ]
     # Define the cluster
     cluster_config = {
         'Name': 'ghactivity_cluster',
@@ -147,7 +155,8 @@ def create_emr_cluster(bucket_name, instance_type, core_instance_count):
         'ServiceRole': 'EMR_Service_Role',  # Ensure this role exists or create it
         'AutoTerminationPolicy': {
             'IdleTimeout': 300
-        }
+        },
+        'BootstrapActions': bootstrap_actions
     }
 
     # Create the cluster with the step
