@@ -25,14 +25,18 @@ To setup this project locally, follow these steps
 2. **Configure AWS**
 
    Configure your aws account with your credentials in your local machine.
+
+4. **Create .env file**
+
+   Create .env file in the aws_resources directory, by refering the sample.env file.
    
-3. **Update the script**
+4. **Update the script**
    
    Update the file paths and  resource names with your values in the app.py script in aws_resources directory.
 
    Update the BASELINE_FILE variable in the create_downloder_lambda function from when the past files should be downloaded.
 
-4. **Run the app**
+5. **Run the app**
      ```bash
      cd aws_resources
      python3 app.py
