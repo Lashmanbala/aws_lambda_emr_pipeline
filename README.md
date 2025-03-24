@@ -6,11 +6,11 @@ The user activity in github is being recorded and stored in an archive called GH
  
 The requirement is to capture the data every hour  in s3 and process and store it in s3 in an optimzed way.
 
-I used aws lambda function to download the data to s3 and the lambda function is triggerd by AWS Eventbridge every hour. 
+I used aws lambda to get the data to s3 and the lambda function is being triggerd by AWS Eventbridge every hour. 
 
-And the data is processed and partitoned by spark in emr and stored as Parquet file in s3. The EMR cluster is lanched by a lambda function which is triggerd by eventbridge once a day in the midnight.
+And the raw data is processed and partitoned by spark in emr and stored as Parquet file in s3. The EMR cluster is lanched by a lambda function which is triggerd by eventbridge once a day in the midnight.
 
-I have built a custom python sctipt which will take care of creating s3 buckets, iam roles, lambda functions, emr cluster and configuring evet bridge rule to trigger the lambdas functions.
+I have built a custom python sctipt which will take care of creating s3 buckets, iam roles, lambda functions, emr cluster and configuring evet bridge rule to trigger the lambda functions.
 
 By running that python script everything will get deployed in AWS.
 
