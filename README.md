@@ -4,7 +4,7 @@
 
 ![Alt text](architecture.png)
 
-The user activity in github is being recorded and stored in an archive called GH Archive. The archive is being updated every hour with last 1 hour user activity data as json file. 
+The user activity in github is being recorded and stored in an archive called GH Archive. The archive is being updated every hour with last 1 hour user activity data as a json file. 
  
 The requirement is to capture the data every hour  in s3 and process and store it in s3 in an optimzed way.
 
