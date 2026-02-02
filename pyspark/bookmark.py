@@ -9,11 +9,11 @@ def get_pattern(bucket_name,file_prefix,bookmark_file,baseline_file):
         bookmark_file = s3_client.get_object(Bucket=bucket_name,
                                     Key=f'{file_prefix}/{bookmark_file}')
         prev_day = bookmark_file['Body'].read().decode('utf-8')
-        next_day = f"{datetime.strftime(datetime.strptime(prev_day, '%Y-%m-%d')+timedelta(days=1), '%Y-%m-%d')}"
+        next_day = f"{datetime.strftime(datetime.strptime(prev_day, '%Y-%m-%d')+timedelta(days=1), '%Y-%m-%d')}" # only the date part
         pattern = next_day
     except ClientError as e:
         if e.response['Error']['Code']=='NoSuchKey':
-            pattern = baseline_file.split('.')[0][:-3]
+            pattern = baseline_file.split('.')[0][:-2] # only the date part
         else:
             raise
     return pattern
