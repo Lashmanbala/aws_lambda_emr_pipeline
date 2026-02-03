@@ -13,7 +13,7 @@ def get_pattern(bucket_name,file_prefix,bookmark_file,baseline_file):
         pattern = next_day
     except ClientError as e:
         if e.response['Error']['Code']=='NoSuchKey':
-            pattern = baseline_file.split('.')[0][:-2] # only the date part
+            pattern = baseline_file.split('.')[0][:10] # only the date part
         else:
             raise
     return pattern
