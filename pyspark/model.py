@@ -52,3 +52,54 @@ def write_delta_dim(df, gold_dir, table_name):
         .mode("overwrite")\
         .save(path)
     logger.info("Written %s to %s", table_name, path)
+
+
+def build_dim_actor(df):
+    return (
+        df.select(
+            col("actor.id").alias("actor_id"),
+            col("actor.login"),
+            col("actor.display_login"),
+            col("actor.avatar_url"),
+        )
+        .filter(col("actor_id").isNotNull())
+        .distinct()
+        .dropDuplicates(["actor_id"])
+    )
+
+def build_dim_repo(df):
+    return (
+        df.select(
+            col("repo.id").alias("repo_id"),
+            col("repo.name"),
+            col("repo.url"),
+        )
+        .filter(col("repo_id").isNotNull())
+        .distinct()
+        .dropDuplicates(["repo_id"])
+    )
+
+EVENT_TYPE_CATEGORY = {
+    "PushEvent": "push",
+    "PullRequestEvent": "pr",
+    "PullRequestReviewEvent": "pr",
+    "PullRequestReviewCommentEvent": "pr",
+    "IssuesEvent": "issue",
+    "IssueCommentEvent": "issue",
+    "ReleaseEvent": "release",
+    "ForkEvent": "fork",
+    "CreateEvent": "create",
+    "DeleteEvent": "delete",
+    "WatchEvent": "watch",
+    "MemberEvent": "member",
+    "PublicEvent": "public",
+}
+
+def build_dim_event_type(df):
+    distinct_types = df.select(col("type").alias("event_type")).filter(col("event_type").isNotNull()).distinct()
+    category_expr = lit("other")
+    for event_type, category in reversed(list(EVENT_TYPE_CATEGORY.items())):
+        category_expr = when(
+            col("event_type") == event_type, lit(category)
+        ).otherwise(category_expr)
+    return distinct_types.withColumn("category", category_expr)
