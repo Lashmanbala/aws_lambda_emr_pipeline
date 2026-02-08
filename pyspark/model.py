@@ -32,3 +32,15 @@ def write_delta_fact(df, gold_dir, coalesce_n):
         .save(path)
     )
     logger.info("Written fact_events to %s", path)
+
+def build_dim_org(df):
+    return (
+        df.filter(col("org.id").isNotNull())
+        .select(
+            col("org.id").alias("org_id"),
+            col("org.login"),
+            col("org.avatar_url"),
+        )
+        .distinct()
+        .dropDuplicates(["org_id"])
+    )
