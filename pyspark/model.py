@@ -44,3 +44,11 @@ def build_dim_org(df):
         .distinct()
         .dropDuplicates(["org_id"])
     )
+
+def write_delta_dim(df, gold_dir, table_name):
+    path = f"{gold_dir.rstrip('/')}/{table_name}"
+    df.coalesce(1)\
+        .write.format("parquet")\
+        .mode("overwrite")\
+        .save(path)
+    logger.info("Written %s to %s", table_name, path)
