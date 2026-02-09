@@ -1,5 +1,4 @@
 from pyspark.sql.functions import col, year, month, dayofmonth, to_timestamp, when, lit
-import logger
 
 def build_fact_events(df):
     return df.select(
@@ -22,17 +21,6 @@ def build_fact_events(df):
     .withColumn("month", month(col("created_at"))) \
     .withColumn("day", dayofmonth(col("created_at")))
 
-def write_delta_fact(df, gold_dir, coalesce_n):
-    path = f"{gold_dir.rstrip('/')}/fact_events"
-    (
-        df.coalesce(coalesce_n)
-        .write.format("parquet")
-        .partitionBy("year", "month", "day")
-        .mode("append")
-        .save(path)
-    )
-    logger.info("Written fact_events to %s", path)
-
 def build_dim_org(df):
     return (
         df.filter(col("org.id").isNotNull())
@@ -44,15 +32,6 @@ def build_dim_org(df):
         .distinct()
         .dropDuplicates(["org_id"])
     )
-
-def write_delta_dim(df, gold_dir, table_name):
-    path = f"{gold_dir.rstrip('/')}/{table_name}"
-    df.coalesce(1)\
-        .write.format("parquet")\
-        .mode("overwrite")\
-        .save(path)
-    logger.info("Written %s to %s", table_name, path)
-
 
 def build_dim_actor(df):
     return (
