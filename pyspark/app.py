@@ -31,6 +31,9 @@ def main():
 
         df = read_landing(spark,src_file_format,src_dir,src_file_pattern)
         
+        df.persist() # we are writing multiple times. so each write'll trigger the same read if we don't persist. 
+                     # Persisting will cache the dataframe in memory and speed up subsequent writes.
+        
         validate_schema_columns(df)
 
         fact_df = build_fact_events(df)
@@ -46,6 +49,8 @@ def main():
         write_delta_dim(dim_org_df, gold_dir, "dim_org")
         write_delta_dim(dim_repo_df, gold_dir, "dim_repo")
         write_delta_dim(dim_event_type_df, gold_dir, "dim_event_type")
+
+        df.unpersist() # unpersisting after all writes
 
         upload_bookmark(bucket_name, file_prefix, bookmark_file, pattern)
 
