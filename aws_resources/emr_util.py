@@ -194,6 +194,9 @@ def add_spark_step(cluster_id, env_vars_dict, zip_file_path, app_file_path):
             'Args': [
                 'spark-submit',
                 '--deploy-mode', 'cluster',
+                '--packages', 'io.delta:delta-spark_2.12:3.1.0',
+                '--conf', "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension",
+                '--conf', "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog",
                 "--conf", "spark.executor.instances=3",
                 "--conf", "spark.executor.cores=1",
                 "--conf", "spark.executor.memory=2g",
