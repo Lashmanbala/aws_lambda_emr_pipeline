@@ -1,5 +1,6 @@
 import boto3
 import json
+import time
 
 def create_emr_ec2_instance_profile():
     iam_client = boto3.client('iam')
@@ -26,6 +27,7 @@ def create_emr_ec2_instance_profile():
                                                 Description='Role for EMR EC2 instances'
                                             )
         role_arn = role_response['Role']['Arn']
+        time.sleep(5)
         print(f'Role "EMR_EC2_Role" created successfully with ARN: {role_arn}')
 
     except iam_client.exceptions.EntityAlreadyExistsException:
@@ -49,6 +51,7 @@ def create_emr_ec2_instance_profile():
     # Create instance profile
     try:
         iam_client.create_instance_profile(InstanceProfileName='EMR_EC2_InstanceProfile')
+        time.sleep(5)
         print('Instance profile "EMR_EC2_InstanceProfile" created successfully.')
 
     except iam_client.exceptions.EntityAlreadyExistsException:
@@ -67,6 +70,7 @@ def create_emr_ec2_instance_profile():
     else:
         print('Role "EMR_EC2_Role" is already attached to instance profile "EMR_EC2_InstanceProfile".')
 
+    time.sleep(5)
     return response["InstanceProfile"]["InstanceProfileName"]
     
 
@@ -126,7 +130,7 @@ def create_emr_cluster(bucket_name, instance_type, core_instance_count, bootstra
     cluster_config = {
         'Name': 'ghactivity_cluster',
         'LogUri': f's3://{bucket_name}/logs/emr_logs/',
-        'ReleaseLabel': 'emr-7.0.0',  # Replace with your desired EMR release version
+        'ReleaseLabel': 'emr-7.12.0',  # Replace with your desired EMR release version
         'Instances': {
             'InstanceGroups': [
                 {
@@ -167,11 +171,19 @@ def create_emr_cluster(bucket_name, instance_type, core_instance_count, bootstra
 def add_spark_step(cluster_id, env_vars_dict, zip_file_path, app_file_path):
     emr_client = boto3.client('emr')
 
-    env_vars = env_vars_dict
-
+    env_vars = env_vars_dict    
     env_conf_args = []
     for key, value in env_vars.items():
-        env_conf_args.extend(['--conf', f'spark.yarn.appMasterEnv.{key}={value}'])
+        # env_conf_args.extend(['--conf', f'spark.yarn.appMasterEnv.{key}={value}'])
+        # Driver (ApplicationMaster)
+        env_conf_args.extend([
+            '--conf', f'spark.yarn.appMasterEnv.{key}={value}'
+        ])
+
+        # Executors (MANDATORY)
+        env_conf_args.extend([
+            '--conf', f'spark.executorEnv.{key}={value}'
+        ])
 
     # Define the Spark submit step
     step_config = {
@@ -181,7 +193,14 @@ def add_spark_step(cluster_id, env_vars_dict, zip_file_path, app_file_path):
             'Jar': 'command-runner.jar',
             'Args': [
                 'spark-submit',
-                '--deploy-mode', 'cluster'
+                '--deploy-mode', 'cluster',
+                "--conf", "spark.executor.instances=3",
+                "--conf", "spark.executor.cores=1",
+                "--conf", "spark.executor.memory=2g",
+                "--conf", "spark.executor.memoryOverhead=1g",
+                "--conf", "spark.driver.memory=2g",
+                "--conf", "spark.sql.shuffle.partitions=8",
+                "--conf", "spark.sql.adaptive.enabled=false"
                 ] + env_conf_args +[
                 '--py-files', zip_file_path,
                 app_file_path
@@ -198,3 +217,41 @@ def add_spark_step(cluster_id, env_vars_dict, zip_file_path, app_file_path):
         return step_response
     except Exception as e:
         print(e)
+
+def test():
+    env_vars = {"ENVIRON":"PROD", 
+            "SRC_DIR":"s3://github-activity-bucket-123/landing/", 
+            "SRC_FILE_FORMAT":"json", 
+            "TGT_DIR":"s3://github-activity-bucket-123/raw/", 
+            "TGT_FILE_FORMAT":"parquet",
+            "BUCKET_NAME":"github-activity-bucket-123",
+            "FILE_PREFIX":"raw",
+            "BOOKMARK_FILE":"bookmark",
+            "BASELINE_FILE":"2026-01-27-0.json.gz"}
+
+    env_conf_args = []
+    for key, value in env_vars.items():
+        env_conf_args.extend(['--conf', f'spark.yarn.appMasterEnv.{key}={value}'])
+
+    step_config = {
+            'Name': 'Spark submit step',
+            'ActionOnFailure': 'CONTINUE',
+            'HadoopJarStep': {
+                'Jar': 'command-runner.jar',
+                'Args': [
+                    'spark-submit',
+                    '--deploy-mode', 'cluster'
+                    ] + env_conf_args +[
+                    '--py-files', 'zip_file_path',
+                    'app_file_path'
+                ]
+            }
+        }
+
+    print(step_config['HadoopJarStep']['Args'])
+
+# test()
+
+# ['spark-submit', '--deploy-mode', 'cluster', '--conf', 'spark.yarn.appMasterEnv.ENVIRON=PROD', '--conf', 'spark.yarn.appMasterEnv.SRC_DIR=s3://github-activity-bucket/landing/', '--conf', 'spark.yarn.appMasterEnv.SRC_FILE_FORMAT=json', '--conf', 'spark.yarn.appMasterEnv.TGT_DIR=s3://github-activity-bucket/raw/', '--conf', 'spark.yarn.appMasterEnv.TGT_FILE_FORMAT=parquet', '--conf', 'spark.yarn.appMasterEnv.BUCKET_NAME=github-activity-bucket', '--conf', 'spark.yarn.appMasterEnv.FILE_PREFIX=raw', '--conf', 'spark.yarn.appMasterEnv.BOOKMARK_FILE=bookmark', '--conf', 'spark.yarn.appMasterEnv.BASELINE_FILE=2024-09-12-0.json.gz', '--py-files', 'zip_file_path', 'app_file_path']
+
+# ['spark-submit', '--deploy-mode', 'cluster', '--conf', 'spark.yarn.appMasterEnv.ENVIRON=PROD', '--conf', 'spark.yarn.appMasterEnv.SRC_DIR=s3://github-activity-bucket-123/landing/', '--conf', 'spark.yarn.appMasterEnv.SRC_FILE_FORMAT=json', '--conf', 'spark.yarn.appMasterEnv.TGT_DIR=s3://github-activity-bucket-123/raw/', '--conf', 'spark.yarn.appMasterEnv.TGT_FILE_FORMAT=parquet', '--conf', 'spark.yarn.appMasterEnv.BUCKET_NAME=github-activity-bucket-123', '--conf', 'spark.yarn.appMasterEnv.FILE_PREFIX=raw', '--conf', 'spark.yarn.appMasterEnv.BOOKMARK_FILE=bookmark', '--conf', 'spark.yarn.appMasterEnv.BASELINE_FILE=2026-01-27-0.json.gz', '--py-files', 'zip_file_path', 'app_file_path']
