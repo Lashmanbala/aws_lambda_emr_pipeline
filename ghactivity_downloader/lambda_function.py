@@ -19,6 +19,7 @@ def lambda_handler(event, context):
             break
 
         upload_res = upload_s3(bucket_name,f'{file_prefix}/{next_file_name}',download_res.content)
+        
         print(f'File {next_file_name} is succssfully processed')
 
         upload_bookmark(bucket_name,file_prefix,bookmark_file,next_file_name)
