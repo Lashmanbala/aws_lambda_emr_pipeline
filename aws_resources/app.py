@@ -2,6 +2,7 @@ from s3_util import create_bucket, upload_s3
 from lambda_util import create_iam_role, create_lambda_function, invoke_lambda_funtion
 from event_bridge_util import create_event_bridge_rule, add_target_to_rule
 import dotenv
+import os
 
 def create_and_upload_s3():
     print('Creating bucket')
@@ -11,11 +12,11 @@ def create_and_upload_s3():
     if bucket_res['ResponseMetadata']['HTTPStatusCode'] == 200:
             print(f'{bucket} created successfully')
 
-    ghactivity_lambda_zipfile = '/home/bala/code/projects/github_activity_project/ghactivity_downloader/ghactivity_downloader_for_lambda.zip'
-    emr_lambda_zipfile = '/home/bala/code/projects/github_activity_project/aws_resources/lambda_for_emr.zip'
-    spark_app_zipfile = '/home/bala/code/projects/github_activity_project/pyspark/github_spark_app.zip'
-    spark_app_file = '/home/bala/code/projects/github_activity_project/pyspark/app.py'
-    bootstrap_file = '/home/bala/code/projects/github_activity_project/aws_resources/install_boto3.sh'
+    ghactivity_lambda_zipfile = os.environ.get('ghactivity_lambda_zipfile') # local file path
+    emr_lambda_zipfile = os.environ.get('emr_lambda_zipfile')
+    spark_app_zipfile = os.environ.get('spark_app_zipfile')
+    spark_app_file = os.environ.get('spark_app_file')
+    bootstrap_file = os.environ.get('bootstrap_file')
     file_path_list = [ghactivity_lambda_zipfile, emr_lambda_zipfile, spark_app_zipfile, spark_app_file, bootstrap_file]
 
     folder='zipfiles'
@@ -47,13 +48,13 @@ def create_downloder_lambda():
 
     bucket='github-activity-bucket-123'
     folder='zipfiles'
-    ghactivity_lambda_zipfile = '/home/bala/code/projects/github_activity_project/ghactivity_downloader/ghactivity_downloader_for_lambda.zip'
+    ghactivity_lambda_zipfile = os.environ.get('ghactivity_lambda_zipfile')
     file_name = ghactivity_lambda_zipfile.split('/')[-1]
 
     env_variables_dict = {'BUCKET_NAME' : bucket,
                         'FILE_PREFIX' : 'landing',
                         'BOOKMARK_FILE' : 'bookmark',
-                        'BASELINE_FILE' : '2026-01-27-0.json.gz'
+                        'BASELINE_FILE' : '2026-01-27-0.json.gz'  # update it
                         }
     func_name='ghactivity-download-function'
     handler = 'lambda_function.lambda_handler'
@@ -94,13 +95,13 @@ def create_emr_lambda():
 
     bucket = 'github-activity-bucket-123'
     folder = 'zipfiles'
-    emr_lambda_zipfile = '/home/bala/code/projects/github_activity_project/aws_resources/lambda_for_emr.zip'
+    emr_lambda_zipfile = os.environ.get('emr_lambda_zipfile')
     file_name = emr_lambda_zipfile.split('/')[-1]
     env_variables_dict = {
         'BUCKET_NAME': 'github-activity-bucket-123',
         'INSTANCE_TYPE': 'm4.xlarge', # 4vcpu, 16 gb memory
         'CORE_INSTANCE_COUNT': '1',
-        'BOOTSTRAP_FILE_PATH': 's3://github-activity-123/zipfiles/install_boto3.sh',
+        'BOOTSTRAP_FILE_PATH': 's3://github-activity-bucket-123/zipfiles/install_boto3.sh',
         'SPARK_ENV_DICT': '{"ENVIRON":"PROD", "SRC_DIR":"s3://github-activity-bucket-123/landing/", "SRC_FILE_FORMAT":"json", "TGT_DIR":"s3://github-activity-bucket-123/raw/", "TGT_FILE_FORMAT":"parquet","BUCKET_NAME":"github-activity-bucket-123","FILE_PREFIX":"raw","BOOKMARK_FILE":"bookmark","BASELINE_FILE":"2026-01-27-0.json.gz"}',
         'ZIP_FILE_PATH': 's3://github-activity-bucket-123/zipfiles/github_spark_app.zip',
         'APP_FILE_PATH': 's3://github-activity-bucket-123/zipfiles/app.py'
