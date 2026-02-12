@@ -5,4 +5,5 @@ def upload_s3(bucket, file, body):
     res = s3_client.put_object(Bucket=bucket,
                         Key = file,
                         Body = body)
+    
     return res
