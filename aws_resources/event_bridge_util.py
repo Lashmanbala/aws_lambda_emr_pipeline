@@ -18,14 +18,14 @@ def add_target_to_rule(rule_name, lambda_arn, rule_arn):
     lambda_client = boto3.client('lambda')
     try:
         put_targets_response = eventbridge_client.put_targets(
-        Rule=rule_name,
-        Targets=[
-            {
-                'Id': '1',
-                'Arn': lambda_arn,
-            }
-        ]
-        )
+                                                            Rule=rule_name,
+                                                            Targets=[
+                                                                    {
+                                                                        'Id': '1',
+                                                                        'Arn': lambda_arn,
+                                                                    }
+                                                                ]
+                                                                )
         # Add permission for EventBridge to invoke the Lambda function
         lambda_client.add_permission(
             FunctionName=lambda_arn,
