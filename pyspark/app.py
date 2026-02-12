@@ -3,7 +3,7 @@ from datetime import datetime
 from read import read_landing
 from util import get_spark_session
 from bookmark import get_pattern, upload_bookmark
-from write import write_delta_fact, write_delta_dim
+from write import write_delta_fact, merge_delta_dim
 from validate_schema import validate_schema_columns
 from model import build_fact_events, build_dim_actor, build_dim_org, build_dim_repo, build_dim_event_type
 
@@ -45,10 +45,11 @@ def main():
         gold_dir = "s3://github-activity-bucket-123/raw/"
 
         write_delta_fact(fact_df, gold_dir, coalesce_n=16)
-        write_delta_dim(dim_actor_df, gold_dir, "dim_actor")
-        write_delta_dim(dim_org_df, gold_dir, "dim_org")
-        write_delta_dim(dim_repo_df, gold_dir, "dim_repo")
-        write_delta_dim(dim_event_type_df, gold_dir, "dim_event_type")
+
+        merge_delta_dim(spark, dim_actor_df, gold_dir, "dim_actor", "actor_id")
+        merge_delta_dim(spark, dim_repo_df, gold_dir, "dim_repo", "repo_id")
+        merge_delta_dim(spark, dim_org_df, gold_dir, "dim_org", "org_id")
+        merge_delta_dim(spark, dim_event_type_df, gold_dir, "dim_event_type", "event_type")
 
         df.unpersist() # unpersisting after all writes
 
