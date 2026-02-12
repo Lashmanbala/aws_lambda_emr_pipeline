@@ -12,7 +12,6 @@ def main():
     src_dir = os.environ.get('SRC_DIR')
     src_file_format = os.environ.get('SRC_FILE_FORMAT')
     tgt_dir = os.environ.get('TGT_DIR')
-    tgt_file_format = os.environ.get('TGT_FILE_FORMAT')
     bucket_name = os.environ.get('BUCKET_NAME')
     file_prefix = os.environ.get('FILE_PREFIX')
     bookmark_file = os.environ.get('BOOKMARK_FILE')
@@ -42,14 +41,13 @@ def main():
         dim_repo_df = build_dim_repo(df)
         dim_event_type_df = build_dim_event_type(df)
 
-        gold_dir = "s3://github-activity-bucket-123/raw/"
 
-        write_delta_fact(fact_df, gold_dir, coalesce_n=16)
+        write_delta_fact(fact_df, tgt_dir, coalesce_n=16)
 
-        merge_delta_dim(spark, dim_actor_df, gold_dir, "dim_actor", "actor_id")
-        merge_delta_dim(spark, dim_repo_df, gold_dir, "dim_repo", "repo_id")
-        merge_delta_dim(spark, dim_org_df, gold_dir, "dim_org", "org_id")
-        merge_delta_dim(spark, dim_event_type_df, gold_dir, "dim_event_type", "event_type")
+        merge_delta_dim(spark, dim_actor_df, tgt_dir, "dim_actor", "actor_id")
+        merge_delta_dim(spark, dim_repo_df, tgt_dir, "dim_repo", "repo_id")
+        merge_delta_dim(spark, dim_org_df, tgt_dir, "dim_org", "org_id")
+        merge_delta_dim(spark, dim_event_type_df, tgt_dir, "dim_event_type", "event_type")
 
         df.unpersist() # unpersisting after all writes
 
