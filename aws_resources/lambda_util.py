@@ -1,5 +1,6 @@
 import boto3
 import json
+import time
 
 def create_iam_role(role_name, policy_arn_list):
     # Initialize the IAM client
@@ -32,19 +33,21 @@ def create_iam_role(role_name, policy_arn_list):
     except iam_client.exceptions.EntityAlreadyExistsException:
         print(f'Role "{role_name}" already exists.')
         create_role_response = iam_client.get_role(RoleName=role_name)
-
-        # Attach the specified policies to the role
-        for policy_arn in policy_arn_list:
-            iam_client.attach_role_policy(
-                                        RoleName=role_name,
-                                        PolicyArn=policy_arn
-                                    )
-            print(f'Policy {policy_arn} attached to role "{role_name}".')
-
-        return create_role_response
-
+    
     except Exception as e:
         print(f'Error: {e}')
+        
+    # Attach the specified policies to the role
+    for policy_arn in policy_arn_list:
+        iam_client.attach_role_policy(
+                                    RoleName=role_name,
+                                    PolicyArn=policy_arn
+                                )
+        print(f'Policy {policy_arn} attached to role "{role_name}".')
+
+    time.sleep(10)  # Wait untill the role is created
+    return create_role_response
+
 
 def create_lambda_function(bucket, folder, file_name, role_arn, env_variables_dict,func_name, handler):
     lambda_client = boto3.client('lambda')
