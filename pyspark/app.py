@@ -3,19 +3,20 @@ from datetime import datetime
 from read import read_landing
 from util import get_spark_session
 from bookmark import get_pattern, upload_bookmark
-from write import write_delta_fact, merge_delta_dim
+from write import write_iceberg_fact, merge_iceberg_dim
 from validate_schema import validate_schema_columns
 from model import build_fact_events, build_dim_actor, build_dim_org, build_dim_repo, build_dim_event_type
 
 def main():
-    env = os.environ.get('ENVIRON')
-    src_dir = os.environ.get('SRC_DIR')
-    src_file_format = os.environ.get('SRC_FILE_FORMAT')
-    tgt_dir = os.environ.get('TGT_DIR')
-    bucket_name = os.environ.get('BUCKET_NAME')
-    file_prefix = os.environ.get('FILE_PREFIX')
-    bookmark_file = os.environ.get('BOOKMARK_FILE')
-    baseline_file = os.environ.get('BASELINE_FILE')
+    env = 'PROD'
+    src_dir = 's3://github-activity-bucket-123/landing/'
+    src_file_format = 'json'
+    tgt_dir = 's3://github-activity-bucket-123/warehouse/'
+    bucket_name = 'github-activity-bucket-123'
+    file_prefix = 'warehouse'
+    bookmark_file = 'bookmark'
+    baseline_file = '2026-01-27-1.json.gz'
+    db_name = 'github_db'
 
     spark = get_spark_session(env, 'Github')
 
@@ -36,18 +37,18 @@ def main():
         validate_schema_columns(df)
 
         fact_df = build_fact_events(df)
+
         dim_actor_df = build_dim_actor(df)
         dim_org_df = build_dim_org(df)
         dim_repo_df = build_dim_repo(df)
         dim_event_type_df = build_dim_event_type(df)
 
+        write_iceberg_fact(spark, fact_df, db_name, 'fact_events', coalesce_n=16)
 
-        write_delta_fact(fact_df, tgt_dir, coalesce_n=16)
-
-        merge_delta_dim(spark, dim_actor_df, tgt_dir, "dim_actor", "actor_id")
-        merge_delta_dim(spark, dim_repo_df, tgt_dir, "dim_repo", "repo_id")
-        merge_delta_dim(spark, dim_org_df, tgt_dir, "dim_org", "org_id")
-        merge_delta_dim(spark, dim_event_type_df, tgt_dir, "dim_event_type", "event_type")
+        merge_iceberg_dim(spark, dim_actor_df, db_name, "dim_actor", "actor_id")
+        merge_iceberg_dim(spark, dim_repo_df, db_name, "dim_repo", "repo_id")
+        merge_iceberg_dim(spark, dim_org_df, db_name, "dim_org", "org_id")
+        merge_iceberg_dim(spark, dim_event_type_df, db_name, "dim_event_type", "event_type")
 
         df.unpersist() # unpersisting after all writes
 
