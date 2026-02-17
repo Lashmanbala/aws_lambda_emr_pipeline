@@ -8,14 +8,15 @@ from validate_schema import validate_schema_columns
 from model import build_fact_events, build_dim_actor, build_dim_org, build_dim_repo, build_dim_event_type
 
 def main():
-    env = 'PROD'
-    src_dir = 's3://github-activity-bucket-123/landing/'
-    src_file_format = 'json'
-    tgt_dir = 's3://github-activity-bucket-123/warehouse/'
-    bucket_name = 'github-activity-bucket-123'
-    file_prefix = 'warehouse'
-    bookmark_file = 'bookmark'
-    baseline_file = '2026-01-27-1.json.gz'
+
+    env = os.environ.get('ENVIRON')
+    src_dir = os.environ.get('SRC_DIR')
+    src_file_format = os.environ.get('SRC_FILE_FORMAT')
+    bucket_name = os.environ.get('BUCKET_NAME')
+    file_prefix = os.environ.get('FILE_PREFIX')
+    bookmark_file = os.environ.get('BOOKMARK_FILE')
+    baseline_file = os.environ.get('BASELINE_FILE')
+    
     db_name = 'github_db'
 
     spark = get_spark_session(env, 'Github')
