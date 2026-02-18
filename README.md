@@ -1,26 +1,73 @@
-# Github User Activity Pipeline - AWS Lambda, EMR
-
-## Overview
-
+# GitHub Activity Lakehouse: AWS S3, Lambda, EMR & Delta Lake
+A production-grade data platform that ingests hourly event data from GH Archive into a structured Star Schema using a serverless-to-EMR architecture.
+ 
+ 
 ![Alt text](architecture.png)
 
-The user activity in github is being recorded and stored in an archive called GH Archive. The archive is being updated every hour with last 1 hour user activity data as a json file. 
- 
-The requirement is to capture the data every hour  in s3 and process and store it in s3 in an optimzed way.
+##  Architecture Overview
+*  **Source:** The user activity in github is being recorded and stored in GH Archive. The archive is being updated every hour with last 1 hour user activity data as a json file.
+*   **Ingestion:** AWS Lambda + EventBridge triggers hourly JSON extraction into S3 (Bronze Layer).
+*   **Processing:** Apache Spark on AWS EMR transforms raw JSON into an optimized Delta Lakehouse.
+*   **Modeling:** Implemented a Star Schema (Fact/Dimension) with SCD Type 1 logic via Delta MERGE operations.
+*   **Orchestration:** Event-driven execution using AWS EventBridge and Lambda-based EMR cluster provisioning.
+*   **Infrastructure-as-Code:** A custom Python deployment engine utilizing `boto3` for idempotent resource creation (S3, IAM, EMR, Lambda).
 
-AWS lambda is used to get the data ingest into s3. And the lambda function is being triggerd by AWS Eventbridge every hour. 
+##   Key Technical Features
+*   **Lakehouse Consistency:** Leverages Delta Lake to provide ACID transactions and schema enforcement on S3.
+*   **Operational Efficiency:** Implemented SCD Type 1 to maintain the most current state of Actors, Orgs, and Repositories while preventing record duplication.
+*   **Performance Optimization:** Fact tables are partitioned by Year/Month/Day, enabling partition pruning for faster query performance.
+*   **Cost Management:** Automated EMR cluster termination post-job completion to minimize cloud spend.
 
-Then the raw data is data modelled in star schema and written in s3 as delta files.
+## Dimensional Model (Star Schema)
+The pipeline converts nested JSON events into a query-optimized relational structure:
+*  **Fact Table:** fact_events (Partitioned by created_at)
+*  **Dimension Tables:** dim_actor, dim_repo, dim_org, dim_event_type.
 
-The fact table is partitoned and appended each concesutive runs. 
+## Business Insights (SQL)
 
-The dimension tables updated incrementally using the merge statements in delta in each consecutive runs.
+* **Top 10 contributors for Pull Requests**
+```bash
+SELECT 
+    a.login AS username,
+    count(f.event_id) AS total_pr_actions,
+    min(f.created_at) AS first_action_at
+FROM fact_events f
+JOIN dim_actor a ON f.actor_id = a.actor_id
+JOIN dim_event_type e ON f.event_type = e.event_type
+WHERE e.category = 'pr'
+GROUP BY a.login
+ORDER BY total_pr_actions DESC
+LIMIT 10;
+```
 
-The EMR cluster is lanched by a lambda function which is triggerd by eventbridge once a day.
+*  **Monthly activity trend by event category**
+```bash
+SELECT 
+    f.year,
+    f.month,
+    e.category,
+    count(f.event_id) AS event_count
+FROM fact_events f
+JOIN dim_event_type e ON f.event_type = e.event_type
+GROUP BY f.year, f.month, e.category
+ORDER BY f.year DESC, f.month DESC, event_count DESC;
+```
 
-I have built a custom python sctipt which will take care of creating s3 buckets, iam roles, lambda functions, emr cluster and configuring event bridge rule to trigger the lambda functions.
-
-By running that python script everything will get deployed in AWS.
+*  **Repos with the most activity**
+```bash
+WITH RepoStats AS (
+    SELECT 
+        r.name AS repo_name,
+        COUNT(f.event_id) AS total_interactions
+    FROM fact_events f
+    JOIN dim_repo r ON f.repo_id = r.repo_id
+    GROUP BY r.name
+)
+SELECT * 
+FROM RepoStats 
+WHERE total_interactions > 100
+ORDER BY total_interactions DESC;
+```
 
 ## Setup
 To setup this project locally, follow these steps
