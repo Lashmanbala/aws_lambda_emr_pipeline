@@ -9,7 +9,7 @@ A production-grade data platform that ingests hourly event data from GH Archive 
 *   **Ingestion:** AWS Lambda + EventBridge triggers hourly JSON extraction into S3 (Bronze Layer).
 *   **Processing:** Apache Spark on AWS EMR transforms raw JSON into an optimized Delta Lakehouse.
 *   **Modeling:** Implemented a Star Schema (Fact/Dimension) with SCD Type 1 logic via Delta MERGE operations.
-*   **Orchestration:** Event-driven execution using AWS EventBridge and Lambda-based EMR cluster provisioning.
+*   **Orchestration:** Time-driven execution using AWS EventBridge and Lambda-based EMR cluster provisioning.
 *   **Infrastructure-as-Code:** A custom Python deployment engine utilizing `boto3` for idempotent resource creation (S3, IAM, EMR, Lambda).
 
 ##   Key Technical Features
