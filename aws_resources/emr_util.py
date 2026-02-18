@@ -180,11 +180,6 @@ def add_spark_step(cluster_id, env_vars_dict, zip_file_path, app_file_path):
             '--conf', f'spark.yarn.appMasterEnv.{key}={value}'
         ])
 
-        # Executors (MANDATORY)
-        env_conf_args.extend([
-            '--conf', f'spark.executorEnv.{key}={value}'
-        ])
-
     # Define the Spark submit step
     step_config = {
         'Name': 'Spark submit step',
