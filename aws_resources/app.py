@@ -102,7 +102,7 @@ def create_emr_lambda():
         'INSTANCE_TYPE': 'm4.xlarge', # 4vcpu, 16 gb memory
         'CORE_INSTANCE_COUNT': '1',
         'BOOTSTRAP_FILE_PATH': 's3://github-activity-bucket-123/zipfiles/install_boto3.sh',
-        'SPARK_ENV_DICT': '{"ENVIRON":"PROD", "SRC_DIR":"s3://github-activity-bucket-123/landing/", "SRC_FILE_FORMAT":"json", "TGT_DIR":"s3://github-activity-bucket-123/raw/", "TGT_FILE_FORMAT":"parquet","BUCKET_NAME":"github-activity-bucket-123","FILE_PREFIX":"raw","BOOKMARK_FILE":"bookmark","BASELINE_FILE":"2026-01-27-0.json.gz"}',
+        'SPARK_ENV_DICT': '{"ENVIRON":"PROD", "SRC_DIR":"s3://github-activity-bucket-123/landing/", "SRC_FILE_FORMAT":"json", "TGT_DIR":"s3://github-activity-bucket-123/processed/","BUCKET_NAME":"github-activity-bucket-123","FILE_PREFIX":"raw","BOOKMARK_FILE":"bookmark","BASELINE_FILE":"2026-01-27-0.json.gz"}',
         'ZIP_FILE_PATH': 's3://github-activity-bucket-123/zipfiles/github_spark_app.zip',
         'APP_FILE_PATH': 's3://github-activity-bucket-123/zipfiles/app.py'
     }
