@@ -6,10 +6,10 @@ A production-grade data platform that ingests hourly event data from GH Archive 
 
 ##  Architecture Overview
 *  **Source:** The user activity in github is being recorded and stored in GH Archive. The archive is being updated every hour with last 1 hour user activity data as a json file.
-*   **Ingestion:** AWS Lambda + EventBridge triggers hourly JSON extraction into S3 (Bronze Layer).
+*   **Ingestion:** AWS Lambda + EventBridge triggers hourly JSON extraction into S3.
 *   **Processing:** Apache Spark on AWS EMR transforms raw JSON into an optimized Delta Lakehouse.
 *   **Modeling:** Implemented a Star Schema (Fact/Dimension) with SCD Type 1 logic via Delta MERGE operations.
-*   **Orchestration:** Event-driven execution using AWS EventBridge and Lambda-based EMR cluster provisioning.
+*   **Orchestration:** Time-driven execution using AWS EventBridge and Lambda-based EMR cluster provisioning.
 *   **Infrastructure-as-Code:** A custom Python deployment engine utilizing `boto3` for idempotent resource creation (S3, IAM, EMR, Lambda).
 
 ##   Key Technical Features
@@ -17,7 +17,7 @@ A production-grade data platform that ingests hourly event data from GH Archive 
 *   **Operational Efficiency:** Implemented SCD Type 1 to maintain the most current state of Actors, Orgs, and Repositories while preventing record duplication.
 *   **Performance Optimization:** Fact tables are partitioned by Year/Month/Day, enabling partition pruning for faster query performance.
 *   **Cost Management:** Automated EMR cluster termination post-job completion to minimize cloud spend.
-
+  
 ## Dimensional Model (Star Schema)
 The pipeline converts nested JSON events into a query-optimized relational structure:
 *  **Fact Table:** fact_events (Partitioned by created_at)
