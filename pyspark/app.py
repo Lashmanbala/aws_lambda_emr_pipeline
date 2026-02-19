@@ -41,7 +41,7 @@ def main():
         dim_repo_df = build_dim_repo(df)
         dim_event_type_df = build_dim_event_type(df)
 
-        write_delta_fact(fact_df, tgt_dir, coalesce_n=16)
+        write_delta_fact(fact_df, tgt_dir)
 
         merge_delta_dim(spark, dim_actor_df, tgt_dir, "dim_actor", "actor_id")
         merge_delta_dim(spark, dim_repo_df, tgt_dir, "dim_repo", "repo_id")

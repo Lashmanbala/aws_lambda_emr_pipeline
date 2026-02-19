@@ -1,10 +1,9 @@
 from delta.tables import DeltaTable
 
-def write_delta_fact(df, tgt_dir, coalesce_n):
+def write_delta_fact(df, tgt_dir):
     path = f"{tgt_dir.rstrip('/')}/fact_events"
     (
-    df.coalesce(coalesce_n) # coalesce number = n.of executor cores
-    .write.format("delta")
+    df.write.format("delta")
     .partitionBy("year", "month", "day")
     .mode("append")
     .save(path)
