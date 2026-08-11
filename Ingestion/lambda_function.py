@@ -14,10 +14,14 @@ def lambda_handler(event, context):
         next_file_name = get_next_file_name(prev_file_name)
 
         download_res = download_file(next_file_name)
-        if download_res.status_code == 404:
-            print(f'Invalid file name or downloads caught up till {prev_file_name}')
-            break
 
+        if download_res.status_code != 200:
+            if download_res.status_code == 404:
+                print(f'Caught up till {prev_file_name}')
+            else:
+                print(f'Unexpected status {download_res.status_code} for {next_file_name}, stopping')
+            break
+        
         upload_res = upload_s3(bucket_name,f'{file_prefix}/{next_file_name}',download_res.content)
         
         print(f'File {next_file_name} is succssfully processed')
