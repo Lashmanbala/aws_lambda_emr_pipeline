@@ -22,7 +22,7 @@ def get_prev_file_name(bucket_name,file_prefix,bookmark_file,baseline_file):
 
 def get_next_file_name(prev_file):
     date_part = prev_file.split('.')[0]
-    next_file = f"{datetime.strftime(datetime.strptime(date_part, '%Y-%M-%d-%H')+timedelta(hours=1), '%Y-%M-%d-%-H')}.json.gz"
+    next_file = f"{datetime.strftime(datetime.strptime(date_part, '%Y-%m-%d-%H')+timedelta(hours=1), '%Y-%m-%d-%-H')}.json.gz"
     
     return next_file
 
