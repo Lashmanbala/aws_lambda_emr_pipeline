@@ -1,20 +1,36 @@
-# Expected root-level columns per schema.json (used for optional validation)
-EXPECTED_ROOT_COLUMNS = ("id", "type", "created_at", "actor", "org", "repo", "payload", "public")
+import logging
+
+logger = logging.getLogger(__name__)
+
+EXPECTED_ROOT = {"id": "string", "type": "string", "created_at": "string",
+                  "public": "boolean", "actor": "struct", "org": "struct",
+                  "repo": "struct", "payload": "struct"}
+
+EXPECTED_PAYLOAD = {"action": "string", "ref": "string", "ref_type": "string",
+                     "push_id": "long", "pull_request": "struct",
+                     "issue": "struct", "release": "struct", "forkee": "struct"}
+
+
+def _check(struct, expected):
+    actual = {f.name: f.dataType.typeName() for f in struct.fields}
+    missing = {c for c in expected if c not in actual}
+    mismatched = {c: (expected[c], actual[c]) for c in expected
+                  if c in actual and actual[c] != expected[c]}
+    return missing, mismatched
 
 
 def validate_schema_columns(df):
-    """Log a warning if any expected root-level columns from schema.json are missing."""
-    present = set(df.columns)
-    missing = [c for c in EXPECTED_ROOT_COLUMNS if c not in present]
-    if missing:
-        print(
-            "Schema drift: expected columns missing from landing data: %s",
-            missing,
-        )
-    else:
-        print("All columns present")
+    missing, mismatched = _check(df.schema, EXPECTED_ROOT )
 
-# tgt_df = spark.read.parquet("s3://github-activity-bucket-123/raw/y*")
-# df = spark.read.json("s3://github-activity-bucket-123/landing/")
+    if "payload" in dict(df.dtypes) and df.schema["payload"].dataType.typeName() == "struct":
+        p_missing, p_mismatched = _check(df.schema["payload"].dataType, EXPECTED_PAYLOAD)
+        missing.update(p_missing)
+        mismatched.update(p_mismatched)
 
-# "s3://github-activity-bucket-123/raw/fact_events"
+    if missing or mismatched:
+        msg = f"Schema validation failed: missing={missing}, type_mismatches={mismatched}"
+        logger.error(msg)
+        
+        raise ValueError(f"Schema validation failed: missing={missing}, type_mismatches={mismatched}")
+
+    logger.info("Schema validation passed")
