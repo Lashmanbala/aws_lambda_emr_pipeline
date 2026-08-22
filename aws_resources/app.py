@@ -1,6 +1,7 @@
 from s3_util import create_bucket, upload_s3
 from lambda_util import create_iam_role, create_lambda_function, invoke_lambda_funtion
-from event_bridge_util import create_event_bridge_rule, add_target_to_rule
+from event_bridge_util import create_event_bridge_rule, add_target_to_rule,  create_event_pattern_rule, add_sns_target_to_rule
+from sns_util import create_sns_topic, subscribe_email, allow_eventbridge_to_publish
 import dotenv
 import os
 
@@ -128,6 +129,29 @@ def schedule_emr_lambda(lambda_arn):
     add_target_to_rule(rule_name, lambda_arn, rule_arn)
     print('Successfully lambda target added to event rule')
 
+def create_emr_failure_alert():
+    print('Creating SNS topic for EMR step failure alerts')
+    topic_res = create_sns_topic('emr-step-failure-alerts')
+    topic_arn = topic_res['TopicArn']
+
+    alert_email = os.environ.get('ALERT_EMAIL')
+    subscribe_email(topic_arn, alert_email)
+
+    rule_name = 'EMRStepFailureRule'
+    event_pattern = {
+        "source": ["aws.emr"],
+        "detail-type": ["EMR Step Status Change"],
+        "detail": {"state": ["FAILED"]}
+    }
+    rule_response = create_event_pattern_rule(rule_name, event_pattern)
+    rule_arn = rule_response['RuleArn']
+
+    add_sns_target_to_rule(rule_name, topic_arn)
+    allow_eventbridge_to_publish(topic_arn, rule_arn)
+
+    print(f'EMR failure alerts wired to {alert_email}')
+
+
 def deploy():
     create_and_upload_s3()
     downloader_lambda_arn = create_downloder_lambda()
@@ -135,6 +159,8 @@ def deploy():
 
     emr_lambda_arn = create_emr_lambda()
     schedule_emr_lambda(emr_lambda_arn)
+
+    create_emr_failure_alert() 
 
 if __name__ == '__main__':
     dotenv.load_dotenv()
