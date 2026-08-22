@@ -22,3 +22,27 @@ def subscribe_email(topic_arn, email):
         return response
     except Exception as e:
         print(e)
+
+def allow_eventbridge_to_publish(topic_arn, rule_arn):
+    sns_client = boto3.client('sns')
+    policy = {
+        "Version": "2012-10-17",
+        "Statement": [{
+            "Sid": "AllowEventBridgePublish",
+            "Effect": "Allow",
+            "Principal": {"Service": "events.amazonaws.com"},
+            "Action": "SNS:Publish",
+            "Resource": topic_arn,
+            "Condition": {"ArnEquals": {"aws:SourceArn": rule_arn}}
+        }]
+    }
+    try:
+        response = sns_client.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName='Policy',
+            AttributeValue=json.dumps(policy)
+        )
+        print(f'EventBridge granted publish permission on {topic_arn}')
+        return response
+    except Exception as e:
+        print(e)
