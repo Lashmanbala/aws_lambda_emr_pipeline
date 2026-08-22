@@ -9,3 +9,16 @@ def create_sns_topic(topic_name):
         return response
     except Exception as e:
         print(e)
+
+def subscribe_email(topic_arn, email):
+    sns_client = boto3.client('sns')
+    try:
+        response = sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol='email',
+            Endpoint=email
+        )
+        print(f'Subscription pending confirmation for {email} — check inbox to confirm')
+        return response
+    except Exception as e:
+        print(e)
