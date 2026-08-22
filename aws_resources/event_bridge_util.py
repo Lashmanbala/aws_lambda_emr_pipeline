@@ -13,6 +13,7 @@ def create_event_bridge_rule(rule_name, rate):
     except Exception as e:
         print(e)
 
+
 def add_target_to_rule(rule_name, lambda_arn, rule_arn):
     eventbridge_client = boto3.client('events')
     lambda_client = boto3.client('lambda')
@@ -36,5 +37,17 @@ def add_target_to_rule(rule_name, lambda_arn, rule_arn):
         )
         
         return put_targets_response
+    except Exception as e:
+        print(e)
+
+def create_event_pattern_rule(rule_name, event_pattern):
+    event_bridge_client = boto3.client('events')
+    try:
+        event_rule_response = event_bridge_client.put_rule(
+                Name=rule_name,
+                EventPattern=json.dumps(event_pattern),
+                State='ENABLED'
+                )
+        return event_rule_response
     except Exception as e:
         print(e)
