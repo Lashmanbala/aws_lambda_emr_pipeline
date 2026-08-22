@@ -51,3 +51,14 @@ def create_event_pattern_rule(rule_name, event_pattern):
         return event_rule_response
     except Exception as e:
         print(e)
+
+def add_sns_target_to_rule(rule_name, topic_arn):
+    eventbridge_client = boto3.client('events')
+    try:
+        response = eventbridge_client.put_targets(
+            Rule=rule_name,
+            Targets=[{'Id': '1', 'Arn': topic_arn}]
+        )
+        return response
+    except Exception as e:
+        print(e)
