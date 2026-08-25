@@ -35,7 +35,18 @@ def create_and_upload_s3():
         if upload_res['ResponseMetadata']['HTTPStatusCode'] == 200:
                 print(f'{file_name} uploded successfully')
 
-def create_downloder_lambda():
+def create_ingestion_failure_alert():
+    print('Creating SNS topic for ingestion Lambda failure alerts')
+    topic_res = create_sns_topic('ghactivity-ingestion-failure-alerts')
+    topic_arn = topic_res['TopicArn']
+
+    alert_email = os.environ.get('ALERT_EMAIL')
+    subscribe_email(topic_arn, alert_email)
+
+    print(f'Ingestion failure alerts wired to {alert_email}')
+    return topic_arn
+
+def create_downloder_lambda(sns_topic_arn):
     print('Creating iam role for downloder_lambda')
 
     role_name = 'lambda-s3-full-access-role'
@@ -55,7 +66,8 @@ def create_downloder_lambda():
     env_variables_dict = {'BUCKET_NAME' : bucket,
                         'FILE_PREFIX' : 'landing',
                         'BOOKMARK_FILE' : 'bookmark',
-                        'BASELINE_FILE' : '2026-01-27-0.json.gz'  # update it
+                        'BASELINE_FILE' : '2026-01-27-0.json.gz',  # update it
+                        'SNS_TOPIC_ARN' : sns_topic_arn
                         }
     func_name='ghactivity-download-function'
     handler = 'lambda_function.lambda_handler'
@@ -78,7 +90,6 @@ def shedule_downloder_lambda(lambda_arn):
     
     add_target_to_rule(rule_name, lambda_arn, rule_arn)
     print("Successfully lambda target added to event rule")
-
 
 def create_emr_lambda():
     print('Creating iam role for emr_lambda')
@@ -154,7 +165,9 @@ def create_emr_failure_alert():
 
 def deploy():
     create_and_upload_s3()
-    downloader_lambda_arn = create_downloder_lambda()
+
+    ingestion_topic_arn = create_ingestion_failure_alert()
+    downloader_lambda_arn = create_downloder_lambda(ingestion_topic_arn)
     shedule_downloder_lambda(downloader_lambda_arn)
 
     emr_lambda_arn = create_emr_lambda()
