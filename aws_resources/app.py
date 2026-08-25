@@ -52,7 +52,8 @@ def create_downloder_lambda(sns_topic_arn):
     role_name = 'lambda-s3-full-access-role'
     lambda_basic_execution_arn = 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
     s3_full_access_arn = 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
-    policy_arn_list = [lambda_basic_execution_arn, s3_full_access_arn]
+    sns_full_access_arn = 'arn:aws:iam::aws:policy/AmazonSNSFullAccess'
+    policy_arn_list = [lambda_basic_execution_arn, s3_full_access_arn, sns_full_access_arn]
 
     create_role_response = create_iam_role(role_name, policy_arn_list)
     lambda_s3_role_arn = create_role_response['Role']['Arn']
