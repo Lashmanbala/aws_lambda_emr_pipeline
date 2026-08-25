@@ -67,7 +67,7 @@ def create_downloder_lambda(sns_topic_arn):
     env_variables_dict = {'BUCKET_NAME' : bucket,
                         'FILE_PREFIX' : 'landing',
                         'BOOKMARK_FILE' : 'bookmark',
-                        'BASELINE_FILE' : '2026-01-27-0.json.gz',  # update it
+                        'BASELINE_FILE' : os.environ.get('BASELINE_FILE'),
                         'SNS_TOPIC_ARN' : sns_topic_arn
                         }
     func_name='ghactivity-download-function'
