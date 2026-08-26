@@ -1,5 +1,5 @@
-# GitHub Activity Lakehouse: AWS S3, Lambda, EMR & Delta Lake
-A production-grade data platform that ingests hourly event data from GH Archive into a structured Star Schema using a serverless-to-EMR architecture.
+# GitHub Activity Batch Pipeline (AWS: Lambda + EMR + Delta Lake)
+A serverless, batch data pipeline that ingests [GH Archive](https://www.gharchive.org/) — an hourly public archive of GitHub's global activities — lands it in S3, and transforms it into a partitioned Delta Lake star schema on a daily EMR job. The pipeline is designed to be idempotent, resumable, and self-alerting on failure.
  
  
 ![Alt text](architecture.png)
@@ -10,18 +10,91 @@ A production-grade data platform that ingests hourly event data from GH Archive 
 *   **Processing:** Apache Spark on AWS EMR transforms raw JSON into an optimized Delta Lakehouse.
 *   **Modeling:** Implemented a Star Schema (Fact/Dimension) with SCD Type 1 logic via Delta MERGE operations.
 *   **Orchestration:** Time-driven execution using AWS EventBridge and Lambda-based EMR cluster provisioning.
-*   **Infrastructure-as-Code:** A custom Python deployment engine utilizing `boto3` for idempotent resource creation (S3, IAM, EMR, Lambda).
+*   **Infrastructure-as-Code:** A custom Python deployment engine utilizing `boto3` for idempotent resource creation (S3, IAM, EMR, Lambda, SNS).
 
-##   Key Technical Features
-*   **Lakehouse Consistency:** Leverages Delta Lake to provide ACID transactions and schema enforcement on S3.
-*   **Operational Efficiency:** Implemented SCD Type 1 to maintain the most current state of Actors, Orgs, and Repositories while preventing record duplication.
-*   **Performance Optimization:** Fact tables are partitioned by Year/Month/Day, enabling partition pruning for faster query performance.
-*   **Cost Management:** Automated EMR cluster termination post-job completion to minimize cloud spend.
-  
+## Key Technical Features
+
+- **Lakehouse Consistency:** Delta Lake provides ACID transactions and schema enforcement on S3.
+- **Operational Efficiency:** SCD Type 1 keeps the most current state of Actors, Orgs, and Repos while preventing duplication; the fact table uses an insert-only `MERGE` keyed on `event_id` so re-running a batch never double-inserts.
+- **Performance Optimization:** The fact table is partitioned by `year`/`month`/`day`, enabling partition pruning for both queries and merges.
+- **Cost Management:** Automated EMR cluster termination after job completion minimizes cloud spend.
+- **Resumability:** S3-based bookmarks let both ingestion and processing resume exactly where they left off after any interruption.
+- **Failure Visibility:** Schema drift, download failures, and EMR step failures each raise alerts via SNS rather than failing silently.
+
+---
+## Repository Structure
+
+```
+.
+├── aws_resources/          # Deploy-time infra provisioning (boto3 IaC)
+│   ├── app.py                  # Orchestrates full deployment
+│   ├── s3_util.py               # S3 bucket/object helpers
+│   ├── lambda_util.py            # IAM role + Lambda function helpers
+│   ├── emr_util.py                # EMR cluster/step + IAM role helpers
+│   ├── event_bridge_util.py        # EventBridge rule/target helpers
+│   ├── sns_util.py                  # SNS topic/subscription helpers
+│   ├── lambda_function_for_emr.py    # Code deployed AS the EMR-launch Lambda
+│   ├── install_boto3.sh               # EMR bootstrap action script
+│   ├── requirements.txt                # Deploy-time Python deps
+│   ├── sample.env                       # Template for local .env
+│   └── lambda_for_emr.zip                # Packaged EMR-launch Lambda code
+│
+├── Ingestion/               # Code deployed AS the hourly download Lambda
+│   ├── lambda_function.py       # Lambda entrypoint / handler
+│   ├── download.py               # GH Archive HTTP download
+│   ├── upload.py                  # S3 upload helper
+│   ├── util.py                     # Bookmark read/write, next-file-name logic
+│   └── ghactivity_downloader_for_lambda.zip  # Packaged Lambda code
+│
+└── Pyspark/                 # Code deployed AS the daily EMR Spark job
+    ├── app.py                    # Spark job entrypoint (driver logic)
+    ├── read.py                    # Landing zone reader
+    ├── model.py                    # Fact/dimension transform logic
+    ├── validate_schema.py           # Schema drift detection
+    ├── write.py                      # Delta Lake write/merge logic
+    ├── bookmark.py                    # Day-level bookmark read/write
+    └── util.py                         # Spark session factory
+```
+## Data Flow
+
+1. **Ingestion (hourly):**
+   `EventBridge (rate: 60 min)` → `ghactivity-download-function` Lambda → reads bookmark from S3 → downloads next hour's `.json.gz` from GH Archive → uploads to `s3://<bucket>/landing/` → advances bookmark → repeats until caught up to the current hour (404 from GH Archive signals "no newer file yet").
+
+2. **Processing (daily):**
+   `EventBridge (cron: 0 0 * * ? *)` → `lambda_function_for_emr` Lambda → provisions EMR IAM roles/instance profile → launches a transient EMR cluster → submits a `spark-submit` step running `Pyspark/app.py` → cluster auto-terminates after the step completes.
+
+3. **Transform (inside the Spark job):**
+   Reads the prior day's landed files → validates schema → derives one fact table and four dimension tables → writes to Delta Lake (`s3://<bucket>/processed/`) → advances the day-level bookmark.
+
+4. **Alerting:** The EMR step (via EventBridge step-state-change rule) and the ingestion Lambda (via direct SNS publish) each independently trigger an email alert on failure.
+
+---  
+
 ## Dimensional Model (Star Schema)
-The pipeline converts nested JSON events into a query-optimized relational structure:
-*  **Fact Table:** fact_events (Partitioned by created_at)
-*  **Dimension Tables:** dim_actor, dim_repo, dim_org, dim_event_type.
+
+The pipeline converts nested JSON events into a query-optimized relational structure, written as Delta Lake tables under `s3://<bucket>/processed/`:
+
+
+**Fact table:** **`fact_events`** (partitioned by `year`, `month`, `day`, derived from `created_at`)
+
+| Column | Description |
+|---|---|
+| `event_id` | GH Archive's `id` — natural key, unique per event |
+| `event_type` | e.g. `PushEvent`, `PullRequestEvent` |
+| `created_at` | Event timestamp |
+| `is_public` | Whether the event is public |
+| `actor_id`, `org_id`, `repo_id` | Foreign keys to dimension tables |
+| `payload_action`, `ref`, `ref_type`, `push_id` | Common payload fields (null where not applicable) |
+| `pr_number`, `issue_number`, `release_tag_name`, `forkee_full_name` | Event-type-specific fields (sparse/null by design) |
+
+**Dimension tables** (SCD Type 1 — last write wins, no history retained):
+
+- `dim_actor` (`actor_id`, `login`, `display_login`, `avatar_url`)
+- `dim_repo` (`repo_id`, `name`, `url`)
+- `dim_org` (`org_id`, `login`, `avatar_url`) — `org` is optional on GH Archive events, so this table only contains events that had one
+- `dim_event_type` (`event_type`, `category`)
+
+---
 
 ## Business Insights (SQL)
 
