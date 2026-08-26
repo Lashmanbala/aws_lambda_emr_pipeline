@@ -95,7 +95,46 @@ The pipeline converts nested JSON events into a query-optimized relational struc
 - `dim_event_type` (`event_type`, `category`)
 
 ---
+## Idempotency
 
+Both re-running the same hour of ingestion and re-processing the same day of Spark transformation are safe:
+
+- **Ingestion → S3 landing:** `put_object` to a deterministic key per hour — re-downloading overwrites the same key with the same bytes.
+- **Fact table:** `write_delta_fact` does an insert-only `MERGE` keyed on `event_id` (+ partition columns for pruning) — a re-run finds all rows already matched and inserts nothing new.
+- **Dimension tables:** `merge_delta_dim` does a full upsert `MERGE` keyed on the natural key — re-running just re-matches and updates in place, no duplication.
+
+This is what makes scheduled retries and manual backfills safe to run without manual dedup cleanup.
+
+---
+## Schema Validation & Evolution
+
+GH Archive's JSON isn't a versioned schema — GitHub adds fields/event types over time, and Spark's default per-batch schema inference means the inferred shape can drift batch to batch.
+
+`validate_schema_columns` checks the fields this pipeline consumes against the actual batch's schema:
+
+- **Missing expected field** or **type mismatch** → logged as an error and raises `ValueError`, hard-failing the Spark step, since downstream `col(...)` selects would otherwise silently produce wrong or null data.
+- **New, unrecognized fields** → not checked — deciding to consume a new field is a manual code change (add to `validate_schema.py` + add the corresponding `col(...)` select in `model.py`).
+
+On failure, the job fails loudly rather than writing incomplete data — the bookmark is never advanced, so the day is automatically retried once the underlying code is fixed.
+
+---
+
+## Alerting
+
+| Trigger | Mechanism | Topic |
+|---|---|---|
+| Ingestion Lambda: non-200/404 download response, or any unhandled exception | Direct `sns.publish()` from within `lambda_function.py` | `ghactivity-ingestion-failure-alerts` |
+| EMR step fails for any reason | EventBridge rule matching `aws.emr` / `EMR Step Status Change` / `state: FAILED` | `emr-step-failure-alerts` |
+
+All topics have an email subscription (`ALERT_EMAIL` env var) — **check your inbox and confirm the SNS subscription** after first deploy, or no alerts will actually deliver.
+
+---
+
+## Backfill
+
+There is currently no built-in backfill mechanism — both the ingestion Lambda and the Spark job are driven entirely by their bookmarks, which only support "resume from here forward." Backfilling a specific historical range today requires manually invoking the Lambda / submitting an ad-hoc EMR step.
+
+---
 ## Business Insights (SQL)
 
 * **Top 10 contributors for Pull Requests**
@@ -142,30 +181,35 @@ WHERE total_interactions > 100
 ORDER BY total_interactions DESC;
 ```
 
-## Setup
-To setup this project locally, follow these steps
+## Setup & Deployment
 
-1. **Clone This Repositories:**
-     ```bash
-     git clone https://github.com/Lashmanbala/aws_lambda_emr_pipeline
-     ```
+1. **Clone this repository:**
+   ```bash
+   git clone https://github.com/Lashmanbala/aws_lambda_emr_pipeline
+   ```
 
 2. **Configure AWS**
+   Configure your AWS account credentials locally.
 
-   Configure your aws account with your credentials in your local machine.
+3. **Package the Lambda/Spark code:**
+   - Zip `Ingestion/` contents → matches `ghactivity_lambda_zipfile` path
+   - Zip `aws_resources/lambda_function_for_emr.py` (+ deps) → matches `emr_lambda_zipfile` path
+   - Zip `Pyspark/` contents → matches `spark_app_zipfile` path (referenced via `--py-files` in the Spark step)
 
-4. **Create .env file**
+4. **Create `.env` file**
+   Create a `.env` file in the `aws_resources` directory, referring to `sample.env`. Include `ALERT_EMAIL` and `BASELINE_FILE`.
 
-   Create .env file in the aws_resources directory, by refering the sample.env file.
+5. **Update the script**
+   Update file paths and resource names with your values in `aws_resources/app.py`.
    
-4. **Update the script**
-   
-   Update the file paths and  resource names with your values in the app.py script in aws_resources directory.
+7. **Run the app**
+   ```bash
+   cd aws_resources
+   pip install -r requirements.txt
+   python3 app.py
+   ```
 
-   Update the BASELINE_FILE variable in the create_downloder_lambda function from when the past files should be downloaded.
+8. **Confirm SNS subscriptions**
+   Check `ALERT_EMAIL`'s inbox for two "AWS Notification - Subscription Confirmation" emails and confirm each, or alerts won't deliver.
 
-5. **Run the app**
-     ```bash
-     cd aws_resources
-     python3 app.py
-     ```
+---
