@@ -19,6 +19,9 @@ A serverless, batch data pipeline that ingests [GH Archive](https://www.gharchiv
 - **Performance Optimization:** The fact table is partitioned by `year`/`month`/`day`, enabling partition pruning for both queries and merges.
 - **Cost Management:** Automated EMR cluster termination after job completion minimizes cloud spend.
 - **Resumability:** S3-based bookmarks let both ingestion and processing resume exactly where they left off after any interruption.
+- **Idempotency:** Insert-only and upsert `MERGE` logic ensures re-running the same hour/day never duplicates data.
+- **Schema Validation:** Hard-fails the job on missing/mismatched fields before bad data reaches Delta tables.
+- **Backfill:** Bookmark-driven design; historical reprocessing currently requires a manual override
 - **Failure Visibility:** Schema drift, download failures, and EMR step failures each raise alerts via SNS rather than failing silently.
 
 ---
