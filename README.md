@@ -2,7 +2,7 @@
 A serverless, batch data pipeline that ingests [GH Archive](https://www.gharchive.org/) — an hourly public archive of GitHub's global activities — lands it in S3, and transforms it into a partitioned Delta Lake star schema on a daily EMR job. The pipeline is designed to be idempotent, resumable, and self-alerting on failure.
  
  
-![Alt text](architecture.png)
+![Alt text](Gh-Batch-Pipeline.png)
 
 ##  Architecture Overview
 *  **Source:** The user activity in github is being recorded and stored in GH Archive. The archive is being updated every hour with last 1 hour user activity data as a json file.
