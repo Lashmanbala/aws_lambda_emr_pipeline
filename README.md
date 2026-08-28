@@ -137,6 +137,69 @@ All topics have an email subscription (`ALERT_EMAIL` env var) — **check your i
 
 There is currently no built-in backfill mechanism — both the ingestion Lambda and the Spark job are driven entirely by their bookmarks, which only support "resume from here forward." Backfilling a specific historical range today requires manually invoking the Lambda / submitting an ad-hoc EMR step.
 
+## EMR Cluster Sizing
+ 
+* Sized specifically around the real hourly file volumes.  
+* gzip files aren't splittable, so a single peak hour (~525 MB uncompressed) always lands on one task/core, which drove several of the decisions below.
+ 
+### Cluster shape
+ 
+* Master node (1)-> `m4.xlarge` -> 4 vcpu and 16 GB memory
+* Core nodes (2) -> `m4.xlarge` -> 4 vcpu and 16 GB memory
+ 
+* **core nodes** run job containers (executors, driver/AM)
+* **master node** runs YARN's ResourceManager and other cluster-management daemons, so its capacity isn't part of the Spark sizing math below.
+ 
+### Core allocation (across 2 core nodes = 8 vCPU total)
+ 
+* Driver (ApplicationMaster) ->  1 core
+* Executors -> 6 cores -> (3 executors × 2 cores) 
+* Headroom -> (NodeManager/OS) -> 1 core
+ 
+### Memory allocation (across 2 core nodes = 32 GB total)
+ 
+* OS + YARN reserved -> 3 GB
+* Available for JVMs (driver + 3 executors) -> 29 GB → ~7 GB/JVM 
+* Executor memory | 5g (of the ~7g budget, 1g set aside as overhead) |
+* Executor memory overhead -> 1g
+* Driver memory -> 5g
+ 
+### Final Spark submit configuration
+ 
+```python
+step_config = {
+    'Name': 'Spark submit step',
+    'ActionOnFailure': 'CONTINUE',
+    'HadoopJarStep': {
+        'Jar': 'command-runner.jar',
+        'Args': [
+            'spark-submit',
+            '--deploy-mode', 'cluster',
+            '--packages', 'io.delta:delta-spark_2.12:3.1.0',
+            '--conf', "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension",
+            '--conf', "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog",
+            '--conf', "spark.driver.cores=1",
+            '--conf', "spark.driver.memory=5g",
+            '--conf', "spark.executor.instances=3",
+            '--conf', "spark.executor.cores=2",
+            '--conf', "spark.executor.memory=5g",
+            '--conf', "spark.executor.memoryOverhead=1g",
+            '--conf', "spark.sql.adaptive.enabled=true",
+        ] + env_conf_args + [
+            '--py-files', zip_file_path,
+            app_file_path
+        ]
+    }
+}
+```
+ 
+### Design decisions
+ 
+- **Adaptive Query Execution (AQE) is on**, with no fixed `spark.sql.shuffle.partitions`. AQE resizes shuffle partitions based on the actual data observed at runtime instead.
+- **Dynamic Resource Allocation (DRA) is deliberately off.** DRA's main benefit is releasing idle executors back to *other* jobs sharing a cluster — this cluster is single-job and transient (spins up, runs one `spark-submit`, terminates), so there's no other workload to reclaim capacity for. Turned off because of no real benefit here.
+
+- **Executor memory (5g)** — Eventhough the initial partition size could be 512 mb max, keeping the persist(), shuffling on the later stage, delta merge operations and GC times in mind, 5 gb of memory is allocated.
+
 ---
 ## Business Insights (SQL)
 
