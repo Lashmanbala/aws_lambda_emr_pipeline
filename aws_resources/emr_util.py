@@ -183,7 +183,7 @@ def add_spark_step(cluster_id, env_vars_dict, zip_file_path, app_file_path):
     # Define the Spark submit step
     step_config = {
         'Name': 'Spark submit step',
-        'ActionOnFailure': 'CONTINUE',
+        'ActionOnFailure': 'TERMINATE_CLUSTER',
         'HadoopJarStep': {
             'Jar': 'command-runner.jar',
             'Args': [
@@ -193,12 +193,11 @@ def add_spark_step(cluster_id, env_vars_dict, zip_file_path, app_file_path):
                 '--conf', "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension",
                 '--conf', "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog",
                 "--conf", "spark.executor.instances=3",
-                "--conf", "spark.executor.cores=1",
-                "--conf", "spark.executor.memory=2g",
+                "--conf", "spark.executor.cores=2",
+                "--conf", "spark.executor.memory=5g",
                 "--conf", "spark.executor.memoryOverhead=1g",
-                "--conf", "spark.driver.memory=2g",
-                "--conf", "spark.sql.shuffle.partitions=8",
-                "--conf", "spark.sql.adaptive.enabled=false"
+                "--conf", "spark.driver.memory=5g",
+                "--conf", "spark.shuffle.service.enabled=true",
                 ] + env_conf_args +[
                 '--py-files', zip_file_path,
                 app_file_path
