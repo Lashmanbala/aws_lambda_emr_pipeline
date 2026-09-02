@@ -144,9 +144,9 @@ There is currently no built-in backfill mechanism — both the ingestion Lambda 
 * Source data : gzip json files Ex: `2024-07-27-3.json.gz`
 * 24 files per day
 * compressed size varies between 10 mb to 80 mb per file
-* compressed size varies between 60 mb to 512 mb per file
+* Uncompressed size varies between 60 mb to 512 mb per file
 * Daily average compressed size is around 1 gb
-* Daily average compressed size is around 6 gb
+* Daily average Uncompressed size is around 6 gb
 * Processing ~3.14 million records per day 
 
 ---
